@@ -27,6 +27,7 @@ classifiers = [
   "Topic :: Scientific/Engineering",
 ]
 dependencies = ["numpy", 
+                "pydmd",
                 "xarray",
                 "matplotlib",
                 "scipy",
