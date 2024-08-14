@@ -26,7 +26,12 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering",
 ]
-dependencies = []
+dependencies = ["numpy", 
+                "xarray",
+                "matplotlib",
+                "scipy",
+                "pandas",
+                "ipykernel"]
 
 [project.optional-dependencies]
 dev = [
