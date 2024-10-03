@@ -3,9 +3,24 @@ import xarray
 
 
 
-# Pseudo code to download ERA5 data from Google Cloud
-# with arguments from a config file
 
+
+# Download ERA5 data from Google Cloud
+print("Opening ERA5 data from Google Cloud...")
+full_era5_ds = xarray.open_zarr(era5_path, chunks=None)
+print("-- ERA5 data loaded.")
+
+# Subset based on user input in the config file
+print("Slicing ERA5 data...")
+full_era5_ds = full_era5_ds[variables]
+era5_ds = full_era5_ds.sel(time=slice(start_time, end_time), level=levels)
+era5_ds = era5_ds.thin(time=delta_time)
+print("-- ERA5 data sliced.")
+
+# Saving the .nc file
+print("Saving ERA5 data...")
+era5_ds.to_netcdf(f"{save_path}_era5_slice.nc")
+print("-- ERA5 data saved.")
 
 
 
