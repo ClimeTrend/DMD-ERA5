@@ -28,7 +28,8 @@ classifiers = [
 ]
 dependencies = ["xarray",
     "netCDF4",
-    "zarr"]
+    "zarr", 
+    "pyprojroot"]
 
 [project.optional-dependencies]
 dev = [

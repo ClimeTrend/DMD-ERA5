@@ -1,4 +1,3 @@
-from configparser import ConfigParser
 import xarray
 
 
@@ -16,6 +15,9 @@ full_era5_ds = full_era5_ds[variables]
 era5_ds = full_era5_ds.sel(time=slice(start_time, end_time), level=levels)
 era5_ds = era5_ds.thin(time=delta_time)
 print("-- ERA5 data sliced.")
+
+# TODO Add attributes to xarray dataset
+
 
 # Saving the .nc file
 print("Saving ERA5 data...")
