@@ -6,5 +6,7 @@ from __future__ import annotations
 
 from importlib.metadata import version
 
-__all__ = ("__version__",)
+from .era5_download.era5_download import myfunction
+
+__all__ = ("__version__","myfunction")
 __version__ = version(__name__)

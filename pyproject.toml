@@ -56,7 +56,7 @@ testpaths = [
 ]
 
 [tool.coverage]
-run.source = ["dmd_era5"]
+run.source = ["dmd_era5","era5_download"]
 port.exclude_lines = [
   'pragma: no cover',
   '\.\.\.',
