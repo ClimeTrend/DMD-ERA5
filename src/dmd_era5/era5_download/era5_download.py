@@ -1,10 +1,7 @@
-
 from configparser import ConfigParser
+import xarray
 
-def myfunction():
-    pass
 
-# import xarray
 
 # Pseudo code to download ERA5 data from Google Cloud
 # with arguments from a config file
