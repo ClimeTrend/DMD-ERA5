@@ -28,7 +28,7 @@ classifiers = [
 ]
 dependencies = ["xarray",
     "netCDF4",
-    "zarr", 
+    "zarr",
     "pyprojroot"]
 
 [project.optional-dependencies]
@@ -99,9 +99,15 @@ select = [
 ignore = [
   "PLR",    # Design related pylint codes
   "ISC001", # Conflicts with formatter
+  "EXE002", # Ignore missing shebang in executable files
 ]
 unfixable = [
   "F401",   # Would remove unused imports
   "F841",   # Would remove unused variables
 ]
 flake8-unused-arguments.ignore-variadic-names = true  # allow unused *args/**kwargs
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = "pyprojroot"
+ignore_missing_imports = true
