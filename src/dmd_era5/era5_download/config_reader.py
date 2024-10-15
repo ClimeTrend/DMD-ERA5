@@ -1,42 +1,35 @@
-from configparser import ConfigParser
-from pyprojroot import here
+import ast
 import os
+from configparser import ConfigParser
+
+from pyprojroot import here
 
 # Load the config file
-config_path =  os.path.join(here(),"src/dmd_era5/config.ini")
+config_path = os.path.join(here(), "src/dmd_era5/config.ini")
 
 
 # Reads the config file and returns a dictionary
-def config():
+def config(section: str):
     parser = ConfigParser()
     parser.read(config_path, encoding="utf-8-sig")
-    
+
     config_dict = {}
 
-    # Loop through sections in the config file
-    for section in parser.sections():
-        # Add section and its variables to the dictionary
-        config_dict[section] = dict(parser.items(section))
-    return config_dict
-
-
-# ---- Helper Functions ----
-
-# Reads the config parser and returns the section
-def section_reader(parser):
-    section_list = []
-    for section in parser.sections():
-        section_list.append(parser[section])
-    return section_list
-
-# Reads settings for a specific section and returns them
-def settings_reader(section):
     if parser.has_section(section):
-         # Dictionary of key-value pairs for the section
-        return dict(parser.items(section)) 
+        params = parser.items(section)  # returns a list of item name and value
+        for param in params:
+            try:
+                config_dict[param[0]] = ast.literal_eval(parser.get(section, param[0]))
+            except Exception as e:
+                print(
+                    f"""
+                    Error while parsing {param[0]} from {section} section
+                    in the config file: {e}
+                    """
+                )
+                raise
     else:
-        return {}
-    
+        msg = f"Section {section} not found in the {config_path} file"
+        raise Exception(msg)
 
-config_data = config()
-print(config_data)
+    return config_dict
