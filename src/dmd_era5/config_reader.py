@@ -9,7 +9,7 @@ config_path = os.path.join(here(), "src/dmd_era5/config.ini")
 
 
 # Reads the config file and returns a dictionary
-def config(section: str):
+def config_reader(section: str):
     parser = ConfigParser()
     parser.read(config_path, encoding="utf-8-sig")
 
