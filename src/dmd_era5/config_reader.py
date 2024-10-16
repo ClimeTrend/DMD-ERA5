@@ -4,12 +4,22 @@ from configparser import ConfigParser
 
 from pyprojroot import here
 
-# Load the config file
 config_path = os.path.join(here(), "src/dmd_era5/config.ini")
 
 
-# Reads the config file and returns a dictionary
 def config_reader(section: str, config_path: str = config_path) -> dict:
+    """
+    Read the configuration file and return a dictionary object.
+
+    Args:
+        section (str): Section of the configuration file.
+        config_path (str): Path to the configuration file.
+            Default is src/dmd_era5/config.ini.
+
+    Returns:
+        dict: Dictionary with the configuration parameters.
+    """
+
     parser = ConfigParser()
     parser.read(config_path, encoding="utf-8-sig")
 
