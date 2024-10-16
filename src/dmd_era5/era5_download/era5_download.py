@@ -1,60 +1,31 @@
-import xarray
+import xarray as xr
+
+from dmd_era5.config_reader import config_reader
+
+config = config_reader("era5-download")
 
 
+def config_parser(config: dict = config) -> dict:
+    """
+    Parse the configuration dictionary and return a dictionary object.
 
+    Args:
+        config (dict): Configuration dictionary with the configuration parameters.
 
+    Returns:
+        dict: Dictionary with the parsed configuration parameters.
+    """
 
-# Download ERA5 data from Google Cloud
-print("Opening ERA5 data from Google Cloud...")
-full_era5_ds = xarray.open_zarr(era5_path, chunks=None)
-print("-- ERA5 data loaded.")
+    keys = [
+        "source_path",
+        "start_date",
+        "start_time",
+        "end_date",
+        "end_time",
+        "delta_time",
+        "variables",
+        "levels",
+        "save_name",
+    ]
 
-# Subset based on user input in the config file
-print("Slicing ERA5 data...")
-full_era5_ds = full_era5_ds[variables]
-era5_ds = full_era5_ds.sel(time=slice(start_time, end_time), level=levels)
-era5_ds = era5_ds.thin(time=delta_time)
-print("-- ERA5 data sliced.")
-
-# TODO Add attributes to xarray dataset
-
-
-# Saving the .nc file
-print("Saving ERA5 data...")
-era5_ds.to_netcdf(f"{save_path}_era5_slice.nc")
-print("-- ERA5 data saved.")
-
-
-
-# variables = [
-#     "u_component_of_wind",
-#     "geopotential",
-#     "temperature",
-#     # ... full list of variables here: https://console.cloud.google.com/storage/browser/gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2;tab=objects?pli=1&prefix=&forceOnObjectsSortingFiltering=false
-# ]
-
-# # Loading ERA5 data from Google Cloud arco project
-# # see https://cloud.google.com/storage/docs/public-datasets/era5#data_access
-# era5_path = (
-#     "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2"
-# )
-
-# print("Loading ERA5 data...")
-# full_era5_ds = xarray.open_zarr(era5_path, chunks=None)
-# print("ERA5 data loaded.")
-
-# full_era5_ds = full_era5_ds[variables]
-
-# start_time = "2020-01-01"
-# end_time = "2020-02-27"
-# data_inner_steps = 6  # process every 6th hour
-
-# print("Slicing ERA5 data...")
-# era5_ds = full_era5_ds.sel(time=slice(start_time, end_time), level=[1000])
-# era5_ds = era5_ds.thin(time=data_inner_steps)
-# print("ERA5 data sliced.")
-
-# # here, era5_ds will be much smaller, and you can then materialize it/save it/etc.
-# print("Saving ERA5 data...")
-# era5_ds.to_netcdf(f"{start_time}_{end_time}_era5_slice.nc")
-# print("ERA5 data saved.")
+    pass
