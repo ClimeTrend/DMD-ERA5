@@ -28,4 +28,5 @@ def test_config_reader():
     assert len(config_1) == 4
 
     assert config_0["param_0"] == "value_0"
+    assert config_0["param_2"] == "value_2.0,value_2.1"
     assert config_1["param_3"] == "value_3"
