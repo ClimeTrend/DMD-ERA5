@@ -1,9 +1,13 @@
+import os
 from datetime import datetime, timedelta
 import xarray as xr
-
-from dmd_era5.config_reader import config_reader, logger
+from pyprojroot import here
+from dmd_era5 import config_reader, setup_logger, log_and_print
+from .create_mock_era5 import create_mock_era5
 
 config = config_reader("era5-download")
+logger = setup_logger('ERA5Download', 'era5_download.log')
+
 
 
 def config_parser(config: dict = config) -> dict:
@@ -120,3 +124,131 @@ def config_parser(config: dict = config) -> dict:
 
 
     return parsed_config
+
+
+def slice_era5_dataset(ds: xr.Dataset, start_date: datetime, end_date: datetime, levels: list) -> xr.Dataset:
+    """
+    Slice the ERA5 dataset based on time range and pressure levels.
+
+    Args:
+        ds (xr.Dataset): The input ERA5 dataset.
+        start_date (datetime): The start date for slicing.
+        end_date (datetime): The end date for slicing.
+        levels (List[int]): The pressure levels to select.
+
+    Returns:
+        xr.Dataset: The sliced ERA5 dataset.
+    """
+    return ds.sel(time=slice(start_date, end_date), level=levels)
+
+def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
+    """
+    Thin the ERA5 dataset based on the specified time delta.
+
+    Args:
+        ds (xr.Dataset): The input ERA5 dataset.
+        delta_time (timedelta): The time delta for thinning.
+
+    Returns:
+        xr.Dataset: The thinned ERA5 dataset.
+    """
+    
+    thinning_factor = int(delta_time.total_seconds() / 3600)
+    return ds.thin(time=thinning_factor)
+
+def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
+    """
+    Add the configuration settings as attributes to the ERA5 dataset.
+
+    Args:
+        ds (xr.Dataset): The input ERA5 dataset.
+        parsed_config (dict): The parsed configuration dictionary.
+
+    Returns:
+        xr.Dataset: The ERA5 dataset with the configuration settings as attributes.
+    """
+    ds.attrs["source_path"] = parsed_config["source_path"]
+    ds.attrs["start_date"] = parsed_config["start_date"].strftime("%Y-%m-%d")
+    ds.attrs["end_date"] = parsed_config["end_date"].strftime("%Y-%m-%d")
+    ds.attrs["delta_time"] = parsed_config["delta_time"]
+    ds.attrs["variables"] = parsed_config["variables"]
+    ds.attrs["levels"] = parsed_config["levels"]
+    ds.attrs["date_downloaded"] = datetime.now().isoformat()
+    return ds
+
+
+def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.Dataset:
+
+    """
+    Download ERA5 data from the specified source path and return an xarray Dataset.
+
+    Args:
+        parsed_config (dict): Parsed configuration dictionary with the configuration parameters.
+
+    Returns:
+        xr.Dataset: An xarray Dataset containing the downloaded ERA5 data.
+    """
+
+    try:
+        if use_mock_data:
+            log_and_print(logger, "Creating mock ERA5 data...")
+            full_era5_ds = create_mock_era5(
+                start_date = parsed_config["start_date"].strftime("%Y-%m-%d"),
+                end_date   = parsed_config["end_date"].strftime("%Y-%m-%d"),
+                variables  = parsed_config["variables"] if parsed_config["variables"] != ["all"] else ["temperature", "u_component_of_wind", "v_component_of_wind"],
+                levels     = parsed_config["levels"]
+            )
+            log_and_print(logger, "Mock ERA5 data created.")
+
+        else:
+
+            # Open the ERA5 Dataset
+            log_and_print(logger, "Loading ERA5 Dataset...")
+            full_era5_ds = xr.open_dataset(parsed_config["source_path"], engine="zarr")
+            log_and_print(logger, "ERA5 loaded.")
+
+            # Select the variables
+            if parsed_config["variables"] != ["all"]:
+                full_era5_ds = full_era5_ds[parsed_config["variables"]]
+
+        # Selecting the time range and levels
+        log_and_print(logger, "Slicing ERA5 Dataset...")
+        era5_ds = slice_era5_dataset(full_era5_ds, parsed_config["start_date"], parsed_config["end_date"], parsed_config["levels"])
+
+        # Apply time thinning if delta_time is greater than 1 hour
+        if parsed_config["delta_time"] > timedelta(hours=1):
+            log_and_print(logger, "Thinning ERA5 Dataset...")
+            era5_ds = thin_era5_dataset(era5_ds, parsed_config["delta_time"])
+
+        # Add config settings as attributes to the dataset
+        era5_ds = add_config_attributes(era5_ds, parsed_config)
+        
+        # Save the dataset as NetCDF
+        if not use_mock_data:
+            output_path = os.path.join(here(), "data", parsed_config["save_name"])
+            log_and_print(logger, f"Saving ERA5 Dataset to {output_path}...")
+            era5_ds.to_netcdf(output_path, format="NETCDF4")
+            log_and_print(logger, "ERA5 Dataset saved.")
+
+        return era5_ds
+
+    except Exception as e:
+        msg = f"Error {'creating mock' if use_mock_data else 'opening'} the ERA5 Dataset: {e}"
+        log_and_print(logger, msg, level="error")
+        raise ValueError(msg)
+
+def main(use_mock_data: bool = False):
+    """Main function to run the ERA5 download process."""
+    try:
+        # Parse the configuration
+        parsed_config = config_parser()
+
+        # Download the ERA5 data
+        era5_data = download_era5_data(parsed_config, use_mock_data)
+
+        log_and_print(logger, "ERA5 download process completed successfully.")
+    except Exception as e:
+        log_and_print(logger, f"ERA5 download process failed: {e}", level="error")
+
+if __name__ == "__main__":
+    main()
