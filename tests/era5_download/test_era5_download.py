@@ -41,7 +41,7 @@ def test_config_parser_basic(base_config):
 def test_config_parser_missing_field(base_config, field):
     """Test the missing field error."""
     del base_config[field]
-    with pytest.raises(ValueError, match=f"Missing required field: {field}"):
+    with pytest.raises(ValueError, match=f"Missing required field in config: {field}"):
         config_parser(base_config)
 
 # --- Invalid date
