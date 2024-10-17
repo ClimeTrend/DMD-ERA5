@@ -24,3 +24,8 @@ def setup_logger(name: str, log_file: str, level=logging.INFO) -> logging.Logger
 
     return logger
 
+def log_and_print(logger: logging.Logger, message: str, level: str = 'info'):
+    """Log a message and print it to the console."""
+    log_function = getattr(logger, level.lower())
+    log_function(message)
+    print(message)
