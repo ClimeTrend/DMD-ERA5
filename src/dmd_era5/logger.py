@@ -1,4 +1,6 @@
 import logging
+import os
+from pyprojroot import here
 
 def setup_logger(name: str, log_file: str, level=logging.INFO) -> logging.Logger:
     """Set up a logger with the specified name and log file."""
@@ -7,6 +9,11 @@ def setup_logger(name: str, log_file: str, level=logging.INFO) -> logging.Logger
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     # Create a file handler for logging to a file
+    log_path = here("logs")
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
+    log_file = os.path.join(log_path, log_file)
+
     file_handler = logging.FileHandler(log_file)
     file_handler.setFormatter(formatter)
 
@@ -18,9 +25,12 @@ def setup_logger(name: str, log_file: str, level=logging.INFO) -> logging.Logger
     logger = logging.getLogger(name)
     logger.setLevel(level)
 
-    # Add both handlers to the logger
+    # Remove any existing handlers
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+
+    # Add the file handler to the logger
     logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
 
     return logger
 

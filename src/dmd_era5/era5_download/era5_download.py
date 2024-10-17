@@ -1,5 +1,7 @@
+import sys
 import os
 from datetime import datetime, timedelta
+import logging
 import xarray as xr
 from pyprojroot import here
 from dmd_era5 import config_reader, setup_logger, log_and_print
@@ -7,6 +9,10 @@ from .create_mock_era5 import create_mock_era5
 
 config = config_reader("era5-download")
 logger = setup_logger('ERA5Download', 'era5_download.log')
+
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(console_handler)
 
 
 def config_parser(config: dict = config) -> dict:
@@ -41,6 +47,7 @@ def config_parser(config: dict = config) -> dict:
     try:
         parsed_config["start_date"] = datetime.strptime(config["start_date"], "%Y-%m-%d")
         parsed_config["end_date"]   = datetime.strptime(config["end_date"], "%Y-%m-%d")
+
     except ValueError as e:
         msg = f"Invalid date format: {e}"
         logger.error(msg)
