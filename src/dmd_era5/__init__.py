@@ -7,9 +7,8 @@ from __future__ import annotations
 from importlib.metadata import version
 
 from .config_reader import config_reader
-from .logger import setup_logger
-from .era5_download.era5_download import config_parser
+from .logger import setup_logger, log_and_print
 
 
-__all__ = ["config_reader", "setup_logger", "config_parser"]
+__all__ = ["config_reader", "setup_logger", "log_and_print"]
 __version__ = version(__name__)
