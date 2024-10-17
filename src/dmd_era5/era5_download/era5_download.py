@@ -9,7 +9,6 @@ config = config_reader("era5-download")
 logger = setup_logger('ERA5Download', 'era5_download.log')
 
 
-
 def config_parser(config: dict = config) -> dict:
     """
     Parse the configuration dictionary and return a dictionary object.
@@ -24,19 +23,15 @@ def config_parser(config: dict = config) -> dict:
     parsed_config = {}
 
     # Validate the required fields
-    required_fields = ["source_path", 
-                       "start_date", 
-                       "start_time", 
-                       "end_date", 
-                       "end_time", 
-                       "delta_time", 
-                       "variables", 
-                       "levels", 
-                       "save_name"]
+    required_fields = ["source_path", "start_date",  "start_time", 
+                       "end_date",    "end_time",    "delta_time", 
+                       "variables",   "levels",      "save_name"]
 
     for field in required_fields:
         if field not in config:
-            raise ValueError(f"Missing required field: {field}")
+            msg = f"Missing required field in config: {field}"    
+            logger.error(msg)
+            raise ValueError(msg)
 
 
     # ------------ Parse the source path ------------
@@ -237,18 +232,15 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         log_and_print(logger, msg, level="error")
         raise ValueError(msg)
 
-def main(use_mock_data: bool = False):
+def main(use_mock_data: bool = False) -> None:
     """Main function to run the ERA5 download process."""
     try:
-        # Parse the configuration
         parsed_config = config_parser()
-
-        # Download the ERA5 data
         era5_data = download_era5_data(parsed_config, use_mock_data)
-
         log_and_print(logger, "ERA5 download process completed successfully.")
     except Exception as e:
         log_and_print(logger, f"ERA5 download process failed: {e}", level="error")
+
 
 if __name__ == "__main__":
     main()
