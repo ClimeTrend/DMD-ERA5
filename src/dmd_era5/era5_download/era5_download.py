@@ -15,6 +15,45 @@ console_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(level
 logger.addHandler(console_handler)
 
 
+def validate_time_parameters(parsed_config: dict) -> None:
+    """
+    Validate the time-related parameters in the from the user config.
+
+    Args:
+        parsed_config (dict): The parsed configuration dictionary.
+
+    Raises:
+        ValueError: If any of the time parameters are invalid or inconsistent.
+    """
+
+
+    start_datetime = datetime.combine(parsed_config["start_date"], parsed_config["start_time"])
+    end_datetime = datetime.combine(parsed_config["end_date"], parsed_config["end_time"])
+    delta_time = parsed_config["delta_time"]
+
+    # Check if end datetime is after start datetime
+    if end_datetime <= start_datetime:
+        raise ValueError("End datetime must be after start datetime.")
+
+    # Check if the time range is at least as long as delta_time
+    if (end_datetime - start_datetime) < delta_time:
+        raise ValueError(f"Time range must be at least as long as delta_time. {end_datetime} - {start_datetime} < {delta_time}")
+
+    # TODO: how to handle this?
+    # Check if the time range is a multiple of delta_time
+    # if (end_datetime - start_datetime) % delta_time != timedelta(0):
+    #     raise ValueError(f"Time range must be a multiple of delta_time.")
+
+    # Check if delta_time is positive
+    if delta_time <= timedelta(0):
+        raise ValueError("delta_time must be positive.")
+
+    # Check if start_date is not in the future
+    if start_datetime > datetime.now():
+        raise ValueError("Start date cannot be in the future.")
+
+
+
 def config_parser(config: dict = config) -> dict:
     """
     Parse the configuration dictionary and return a dictionary object.
@@ -43,24 +82,15 @@ def config_parser(config: dict = config) -> dict:
     # ------------ Parse the source path ------------
     parsed_config["source_path"] = config["source_path"]
 
-    # ------------ Parse the start and end date ------------
+    # ------------ Parse the start date and time ------------
     try:
         parsed_config["start_date"] = datetime.strptime(config["start_date"], "%Y-%m-%d")
-        parsed_config["end_date"]   = datetime.strptime(config["end_date"], "%Y-%m-%d")
-
+        parsed_config["start_time"] = datetime.strptime(config["start_time"], "%H:%M:%S").time()
     except ValueError as e:
-        msg = f"Invalid date format: {e}"
+        msg = f"Invalid start date or time format: {e}"
         logger.error(msg)
         raise ValueError(msg)
     
-    # ------------ Parse the start and end time ------------
-    try:
-        parsed_config["start_time"] = datetime.strptime(config["start_time"], "%H:%M:%S").time()
-        parsed_config["end_time"]   = datetime.strptime(config["end_time"], "%H:%M:%S").time()
-    except ValueError as e:
-        msg = f"Invalid time format in config: {e}"
-        logger.error(msg)
-        raise ValueError(msg)
 
     # ------------ Parse the delta time ------------
     delta_time_mapping = {
@@ -89,7 +119,24 @@ def config_parser(config: dict = config) -> dict:
         msg = f"Error parsing delta_time from config: {e}"
         logger.error(msg)
         raise ValueError(msg)
+    
+    # ------------ Parse the end date and time ------------
+    if "end_date" not in config or config["end_date"] == "" or "end_time" not in config or config["end_time"] == "":
+        start_datetime = datetime.combine(parsed_config["start_date"], parsed_config["start_time"])
+        parsed_config["end_date"]   = start_datetime + parsed_config["delta_time"]
+        parsed_config["end_time"]   = parsed_config["start_time"]
+        log_and_print(logger, f"No end date/time, calculated as {parsed_config['end_date']} {parsed_config['end_time']} using start_date and start_time + delta_time", level="warning")
+    else:
+        try:
+            parsed_config["end_date"]   = datetime.strptime(config["end_date"], "%Y-%m-%d")
+            parsed_config["end_time"]   = datetime.strptime(config["end_time"], "%H:%M:%S").time()
+        except ValueError as e:
+            msg = f"Invalid end time or date format in config: {e}"
+            logger.error(msg)
+            raise ValueError(msg)
 
+    # Validate the time parameters
+    validate_time_parameters(parsed_config)
 
     # ------------ Parse variables ------------
     try:
@@ -126,6 +173,7 @@ def config_parser(config: dict = config) -> dict:
 
 
     return parsed_config
+
 
 
 def slice_era5_dataset(ds: xr.Dataset, start_date: datetime, end_date: datetime, levels: list) -> xr.Dataset:
@@ -200,6 +248,10 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
                 variables  = parsed_config["variables"] if parsed_config["variables"] != ["all"] else ["temperature", "u_component_of_wind", "v_component_of_wind"],
                 levels     = parsed_config["levels"]
             )
+
+            # Override source_path for mock data
+            parsed_config["source_path"] = "mock_data"
+
             log_and_print(logger, "Mock ERA5 data created.")
 
         else:
@@ -245,6 +297,8 @@ def main(use_mock_data: bool = False) -> None:
         parsed_config = config_parser()
         era5_data = download_era5_data(parsed_config, use_mock_data)
         log_and_print(logger, "ERA5 download process completed successfully.")
+    except ValueError as e:
+        log_and_print(logger, f"Configuration error: {e}", level="error")
     except Exception as e:
         log_and_print(logger, f"ERA5 download process failed: {e}", level="error")
 

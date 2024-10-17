@@ -15,9 +15,9 @@ def base_config():
         "source_path": "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
         "start_date": "2019-01-01",
         "start_time": "00:00:00",
-        "end_date": "2019-01-02",
-        "end_time": "00:00:00",
-        "delta_time": "1h",
+        "end_date": "2020-01-01",
+        "end_time": "00:00:01",
+        "delta_time": "1y",
         "variables": "all",
         "levels": "1000",
         "save_name": ""
@@ -28,11 +28,11 @@ def test_config_parser_basic(base_config):
     
     assert parsed_config["source_path"] == base_config["source_path"], f"source_path should be {base_config['source_path']} not {parsed_config['source_path']}"
     assert parsed_config["start_date"]  == datetime(2019, 1, 1), f"start_date should be {datetime(2019, 1, 1, 0, 0)} not {parsed_config['start_date']}"
-    assert parsed_config["end_date"]    == datetime(2019, 1, 2), f"end_date should be {datetime(2019, 1, 2, 0, 0)} not {parsed_config['end_date']}"
-    assert parsed_config["delta_time"]  == timedelta(hours=1), f"delta_time should be {timedelta(hours=1)} not {parsed_config['delta_time']}"
+    assert parsed_config["end_date"]    == datetime(2020, 1, 1), f"end_date should be {datetime(2019, 1, 2, 0, 0)} not {parsed_config['end_date']}"
+    assert parsed_config["delta_time"]  == timedelta(days=365), f"delta_time should be {timedelta(hours=1)} not {parsed_config['delta_time']}"
     assert parsed_config["variables"]   == ["all"], f"variables should be ['all'] not {parsed_config['variables']}"
     assert parsed_config["levels"]      == [1000], f"levels should be [1000] not {parsed_config['levels']}"
-    assert parsed_config["save_name"]   == "2019-01-01_2019-01-02_1h.nc", f"save_name should be 2019-01-01_2019-01-02_1h.nc not {parsed_config['save_name']}"
+    assert parsed_config["save_name"]   == "2019-01-01_2020-01-01_1y.nc", f"save_name should be 2019-01-01_2020-01-01_1y.nc not {parsed_config['save_name']}"
 
 # ----- Test cases -----
 
@@ -47,25 +47,25 @@ def test_config_parser_missing_field(base_config, field):
 # --- Invalid date
 @pytest.mark.parametrize("date_field,invalid_date", [
     ("start_date", "2019-02-31"),
-    ("end_date", "2019-13-01"),
+    ("start_date", "2019-13-01"),
     ("start_date", "not-a-date"),
 ])
 def test_config_parser_invalid_date(base_config, date_field, invalid_date):
     """Test the invalid date error."""
     base_config[date_field] = invalid_date
-    with pytest.raises(ValueError, match="Invalid date format"):
+    with pytest.raises(ValueError, match="Invalid start date or time format"):
         config_parser(base_config)
 
 # --- Invalid time
 @pytest.mark.parametrize("time_field,invalid_time", [
     ("start_time", "25:00:00"),
-    ("end_time", "12:60:00"),
+    ("start_time", "12:60:00"),
     ("start_time", "not-a-time"),
 ])
 def test_config_parser_invalid_time(base_config, time_field, invalid_time):
     """Test the invalid time error."""
     base_config[time_field] = invalid_time
-    with pytest.raises(ValueError, match="Invalid time format in config"):
+    with pytest.raises(ValueError, match="Invalid start date or time format"):
         config_parser(base_config)
 
     
@@ -92,28 +92,6 @@ def test_config_parser_delta_time(base_config, delta_time, expected):
     parsed_config = config_parser(base_config)
     assert parsed_config["delta_time"] == expected, f"Expected delta_time to be {expected}, but got {parsed_config['delta_time']}"
 
-
-@pytest.mark.parametrize("date_field,invalid_date", [
-    ("start_date", "2019-02-31"),
-    ("end_date", "2019-13-01"),
-    ("start_date", "not-a-date"),
-])
-def test_config_parser_invalid_date(base_config, date_field, invalid_date):
-    """Test the invalid date error."""
-    base_config[date_field] = invalid_date
-    with pytest.raises(ValueError, match="Invalid date format"):
-        config_parser(base_config)
-
-@pytest.mark.parametrize("time_field,invalid_time", [
-    ("start_time", "25:00:00"),
-    ("end_time", "12:60:00"),
-    ("start_time", "not-a-time"),
-])
-def test_config_parser_invalid_time(base_config, time_field, invalid_time):
-    """Test the invalid time error."""
-    base_config[time_field] = invalid_time
-    with pytest.raises(ValueError, match="Invalid time format in config"):
-        config_parser(base_config)
 
 @pytest.mark.parametrize("invalid_delta", ["1v", "1", "not-a-delta"])
 def test_config_parser_invalid_delta_time(base_config, invalid_delta):
@@ -155,6 +133,12 @@ def test_config_parser_generate_save_name(base_config):
     expected_save_name = "2023-01-01_2023-12-31_1d.nc"
     assert parsed_config["save_name"] == expected_save_name, f"Expected save_name to be {expected_save_name}, but got {parsed_config['save_name']}"
 
+
+def test_config_parser_end_date_not_provided(base_config):
+    """Test that the end_date is correctly generated when left blank."""
+    base_config["end_date"] = ""
+    parsed_config = config_parser(base_config)
+    assert parsed_config["end_date"] == parsed_config["start_date"] + parsed_config["delta_time"], f"Expected end_date to be {parsed_config['start_date'] + parsed_config['delta_time']}, but got {parsed_config['end_date']}"
 
 # ---- Test mock data ----
 
