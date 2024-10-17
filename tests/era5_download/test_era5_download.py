@@ -3,11 +3,11 @@ Tests for the era5_download module.
 """
 
 import pytest
-
+import xarray as xr
 from datetime import timedelta, datetime
 
-from dmd_era5.era5_download.era5_download import config_parser
-
+from dmd_era5.era5_download import config_parser, download_era5_data
+from dmd_era5.era5_download.era5_download import slice_era5_dataset, thin_era5_dataset, create_mock_era5
 
 @pytest.fixture
 def base_config():
@@ -27,12 +27,12 @@ def test_config_parser_basic(base_config):
     parsed_config = config_parser(base_config)
     
     assert parsed_config["source_path"] == base_config["source_path"], f"source_path should be {base_config['source_path']} not {parsed_config['source_path']}"
-    assert parsed_config["start_date"] == datetime(2019, 1, 1), f"start_date should be {datetime(2019, 1, 1, 0, 0)} not {parsed_config['start_date']}"
-    assert parsed_config["end_date"] == datetime(2019, 1, 2), f"end_date should be {datetime(2019, 1, 2, 0, 0)} not {parsed_config['end_date']}"
-    assert parsed_config["delta_time"] == timedelta(hours=1), f"delta_time should be {timedelta(hours=1)} not {parsed_config['delta_time']}"
-    assert parsed_config["variables"] == ["all"], f"variables should be ['all'] not {parsed_config['variables']}"
-    assert parsed_config["levels"] == [1000], f"levels should be [1000] not {parsed_config['levels']}"
-    assert parsed_config["save_name"] == "2019-01-01_2019-01-02_1h.nc", f"save_name should be 2019-01-01_2019-01-02_1h.nc not {parsed_config['save_name']}"
+    assert parsed_config["start_date"]  == datetime(2019, 1, 1), f"start_date should be {datetime(2019, 1, 1, 0, 0)} not {parsed_config['start_date']}"
+    assert parsed_config["end_date"]    == datetime(2019, 1, 2), f"end_date should be {datetime(2019, 1, 2, 0, 0)} not {parsed_config['end_date']}"
+    assert parsed_config["delta_time"]  == timedelta(hours=1), f"delta_time should be {timedelta(hours=1)} not {parsed_config['delta_time']}"
+    assert parsed_config["variables"]   == ["all"], f"variables should be ['all'] not {parsed_config['variables']}"
+    assert parsed_config["levels"]      == [1000], f"levels should be [1000] not {parsed_config['levels']}"
+    assert parsed_config["save_name"]   == "2019-01-01_2019-01-02_1h.nc", f"save_name should be 2019-01-01_2019-01-02_1h.nc not {parsed_config['save_name']}"
 
 # ----- Test cases -----
 
@@ -154,3 +154,71 @@ def test_config_parser_generate_save_name(base_config):
     
     expected_save_name = "2023-01-01_2023-12-31_1d.nc"
     assert parsed_config["save_name"] == expected_save_name, f"Expected save_name to be {expected_save_name}, but got {parsed_config['save_name']}"
+
+
+# ---- Test mock data ----
+
+def test_download_era5_data_mock(base_config):
+    """Test that the download_era5_data function correctly creates a mock dataset."""
+    parsed_config = config_parser(base_config)
+    
+    # Use the mock dataset
+    era5_data = download_era5_data(parsed_config, use_mock_data=True)
+    
+    assert isinstance(era5_data, xr.Dataset), "The result should be an xarray Dataset"
+    assert "temperature" in era5_data.variables, "The dataset should contain temperature data"
+    assert era5_data.attrs["source"] == "Generated mock data", "The dataset should have the mock data source attribute"
+
+
+
+def test_slice_era5_dataset():
+    """Test that the slice_era5_dataset function correctly slices the dataset."""
+    mock_ds = create_mock_era5(
+        start_date="2019-01-01",
+        end_date="2019-01-05",
+        variables=["temperature"],
+        levels=[1000, 850, 500]
+    )
+    
+    # Test slicing
+    sliced_ds = slice_era5_dataset(
+        mock_ds,
+        start_date=datetime(2019, 1, 2),
+        end_date=datetime(2019, 1, 4),
+        levels=[1000, 500]
+    )
+    
+    assert sliced_ds.time.min().values.astype('datetime64[us]').astype(datetime) == datetime(2019, 1, 2)
+    assert sliced_ds.time.max().values.astype('datetime64[us]').astype(datetime) == datetime(2019, 1, 4)
+    assert list(sliced_ds.level.values) == [1000, 500]
+
+def test_thin_era5_dataset():
+    """Test that the thin_era5_dataset function correctly thins the dataset."""
+    mock_ds = create_mock_era5(
+        start_date="2019-01-01",
+        end_date="2019-01-02",
+        variables=["temperature"],
+        levels=[1000]
+    )
+    
+    # Test thinning
+    thinned_ds = thin_era5_dataset(mock_ds, timedelta(hours=6))
+    
+    assert len(thinned_ds.time) == 5  # 24 hours / 6 hour intervals + 1
+    # Check if 6 hours with some tolerance
+    assert (thinned_ds.time.diff('time').astype('timedelta64[ns]').astype(int) == 6 * 3600 * 1e9).all()
+
+def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
+    """Test the full pipeline of downloading, slicing, and thinning ERA5 data using a mock dataset."""
+    base_config["start_date"] = "2019-01-01"
+    base_config["end_date"] = "2019-01-05"
+    base_config["delta_time"] = "6h"
+    base_config["levels"] = "1000,500"
+    parsed_config = config_parser(base_config)
+    
+    era5_data = download_era5_data(parsed_config, use_mock_data=True)
+    
+    assert era5_data.time.min().values.astype('datetime64[us]').astype(datetime) == datetime(2019, 1, 1)
+    assert era5_data.time.max().values.astype('datetime64[us]').astype(datetime) == datetime(2019, 1, 5)
+    assert list(era5_data.level.values) == [1000, 500]
+    assert (era5_data.time.diff('time').astype('timedelta64[ns]').astype(int) == 6 * 3600 * 1e9).all()
