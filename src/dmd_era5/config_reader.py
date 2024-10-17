@@ -34,8 +34,13 @@ def config_reader(section: str, config_path: str = CONFIG_PATH) -> dict:
 
     # Check if the section exists in the configuration file
     if parser.has_section(section):
+
+        # Get the parameters in the section
+
         parameters = parser.items(section)  # returns a list of item name and value
         logger.info(f"Parameters in {section} section: {parameters}")
+
+        # Parse the parameters
         for param_name, param_value in parameters:
             try:
                 # Use ast.literal_eval to safely evaluate the parameter value
