@@ -7,9 +7,10 @@ from datetime import datetime, timedelta
 import pytest
 import xarray as xr
 
-from dmd_era5.era5_download import config_parser, download_era5_data
-from dmd_era5.era5_download.era5_download import (
+from dmd_era5.era5_download import (
+    config_parser,
     create_mock_era5,
+    download_era5_data,
     slice_era5_dataset,
     thin_era5_dataset,
 )
@@ -35,13 +36,16 @@ def test_config_parser_basic(base_config):
 
     assert (
         parsed_config["source_path"] == base_config["source_path"]
-    ), f"source_path should be {base_config['source_path']} not {parsed_config['source_path']}"
-    assert (
-        parsed_config["start_date"] == datetime(2019, 1, 1)
-    ), f"start_date should be {datetime(2019, 1, 1, 0, 0)} not {parsed_config['start_date']}"
-    assert (
-        parsed_config["end_date"] == datetime(2020, 1, 1)
-    ), f"end_date should be {datetime(2019, 1, 2, 0, 0)} not {parsed_config['end_date']}"
+    ), f"""source_path should be {base_config['source_path']}
+    not {parsed_config['source_path']}"""
+    assert parsed_config["start_date"] == datetime(
+        2019, 1, 1
+    ), f"""start_date should be {datetime(2019, 1, 1, 0, 0)}
+    not {parsed_config['start_date']}"""
+    assert parsed_config["end_date"] == datetime(
+        2020, 1, 1
+    ), f"""end_date should be {datetime(2019, 1, 2, 0, 0)}
+    not {parsed_config['end_date']}"""
     assert parsed_config["delta_time"] == timedelta(
         days=365
     ), f"delta_time should be {timedelta(hours=1)} not {parsed_config['delta_time']}"
@@ -53,7 +57,8 @@ def test_config_parser_basic(base_config):
     ], f"levels should be [1000] not {parsed_config['levels']}"
     assert (
         parsed_config["save_name"] == "2019-01-01_2020-01-01_1y.nc"
-    ), f"save_name should be 2019-01-01_2020-01-01_1y.nc not {parsed_config['save_name']}"
+    ), f"""save_name should be 2019-01-01_2020-01-01_1y.nc
+    not {parsed_config['save_name']}"""
 
 
 # ----- Test cases -----
@@ -82,7 +87,7 @@ def test_config_parser_missing_field(base_config, field):
 
 # --- Invalid date
 @pytest.mark.parametrize(
-    "date_field,invalid_date",
+    ("date_field", "invalid_date"),
     [
         ("start_date", "2019-02-31"),
         ("start_date", "2019-13-01"),
@@ -98,7 +103,7 @@ def test_config_parser_invalid_date(base_config, date_field, invalid_date):
 
 # --- Invalid time
 @pytest.mark.parametrize(
-    "time_field,invalid_time",
+    ("time_field", "invalid_time"),
     [
         ("start_time", "25:00:00"),
         ("start_time", "12:60:00"),
@@ -113,7 +118,7 @@ def test_config_parser_invalid_time(base_config, time_field, invalid_time):
 
 
 @pytest.mark.parametrize(
-    "levels,expected",
+    ("levels", "expected"),
     [
         ("1000,850,500", [1000, 850, 500]),
         ("1000", [1000]),
@@ -130,7 +135,7 @@ def test_config_parser_levels(base_config, levels, expected):
 
 
 @pytest.mark.parametrize(
-    "delta_time,expected",
+    ("delta_time", "expected"),
     [
         ("1h", timedelta(hours=1)),
         ("24h", timedelta(hours=24)),
@@ -156,7 +161,7 @@ def test_config_parser_invalid_delta_time(base_config, invalid_delta):
 
 
 @pytest.mark.parametrize(
-    "variables,expected",
+    ("variables", "expected"),
     [
         ("temperature,humidity,pressure", ["temperature", "humidity", "pressure"]),
         ("all", ["all"]),
@@ -197,7 +202,8 @@ def test_config_parser_generate_save_name(base_config):
     expected_save_name = "2023-01-01_2023-12-31_1d.nc"
     assert (
         parsed_config["save_name"] == expected_save_name
-    ), f"Expected save_name to be {expected_save_name}, but got {parsed_config['save_name']}"
+    ), f"""Expected save_name to be {expected_save_name},
+    but got {parsed_config['save_name']}"""
 
 
 def test_config_parser_end_date_not_provided(base_config):
@@ -207,7 +213,9 @@ def test_config_parser_end_date_not_provided(base_config):
     assert (
         parsed_config["end_date"]
         == parsed_config["start_date"] + parsed_config["delta_time"]
-    ), f"Expected end_date to be {parsed_config['start_date'] + parsed_config['delta_time']}, but got {parsed_config['end_date']}"
+    ), f"""Expected end_date to be
+    {parsed_config['start_date'] + parsed_config['delta_time']},
+    but got {parsed_config['end_date']}"""
 
 
 # ---- Test mock data ----
@@ -276,7 +284,10 @@ def test_thin_era5_dataset():
 
 
 def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
-    """Test the full pipeline of downloading, slicing, and thinning ERA5 data using a mock dataset."""
+    """
+    Test the full pipeline of downloading, slicing, and
+    thinning ERA5 data using a mock dataset.
+    """
     base_config["start_date"] = "2019-01-01"
     base_config["end_date"] = "2019-01-05"
     base_config["delta_time"] = "6h"
