@@ -7,9 +7,8 @@ from __future__ import annotations
 from importlib.metadata import version
 
 from .config_reader import config_reader
-from .logger import setup_logger, log_and_print
-from .era5_download import config_parser, download_era5_data, create_mock_era5
-
+from .era5_download import config_parser, create_mock_era5, download_era5_data
+from .logger import log_and_print, setup_logger
 
 __all__ = [
     "config_reader",

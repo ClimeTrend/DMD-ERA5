@@ -1,12 +1,16 @@
 import logging
 import os
+
 from pyprojroot import here
+
 
 def setup_logger(name: str, log_file: str, level=logging.INFO) -> logging.Logger:
     """Set up a logger with the specified name and log file."""
-    
+
     # Create a formatter for the log messages
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
 
     # Create a file handler for logging to a file
     log_path = here("logs")
@@ -34,7 +38,8 @@ def setup_logger(name: str, log_file: str, level=logging.INFO) -> logging.Logger
 
     return logger
 
-def log_and_print(logger: logging.Logger, message: str, level: str = 'info'):
+
+def log_and_print(logger: logging.Logger, message: str, level: str = "info"):
     """Log a message and print it to the console."""
     log_function = getattr(logger, level.lower())
     log_function(message)
