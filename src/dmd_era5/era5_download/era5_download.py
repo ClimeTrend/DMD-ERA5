@@ -5,10 +5,7 @@ from datetime import datetime, timedelta
 
 import xarray as xr
 from pyprojroot import here
-
-from dmd_era5 import config_reader, log_and_print, setup_logger
-
-from .create_mock_era5 import create_mock_era5
+from dmd_era5 import config_reader, setup_logger, log_and_print
 
 config = config_reader("era5-download")
 logger = setup_logger("ERA5Download", "era5_download.log")
