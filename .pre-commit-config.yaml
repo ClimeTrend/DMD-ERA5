@@ -37,3 +37,6 @@ repos:
         args: []
         additional_dependencies:
           - pytest
+          - numpy
+          - xarray
+          - pandas-stubs

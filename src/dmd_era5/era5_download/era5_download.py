@@ -5,7 +5,9 @@ from datetime import datetime, timedelta
 
 import xarray as xr
 from pyprojroot import here
-from dmd_era5 import config_reader, setup_logger, log_and_print
+
+from dmd_era5 import config_reader, log_and_print, setup_logger
+from dmd_era5.era5_download.create_mock_era5 import create_mock_era5
 
 config = config_reader("era5-download")
 logger = setup_logger("ERA5Download", "era5_download.log")
@@ -38,13 +40,14 @@ def validate_time_parameters(parsed_config: dict) -> None:
 
     # Check if end datetime is after start datetime
     if end_datetime <= start_datetime:
-        raise ValueError("End datetime must be after start datetime.")
+        msg = "End datetime must be after start datetime"
+        raise ValueError(msg)
 
     # Check if the time range is at least as long as delta_time
     if (end_datetime - start_datetime) < delta_time:
-        raise ValueError(
-            f"Time range must be at least as long as delta_time. {end_datetime} - {start_datetime} < {delta_time}"
-        )
+        msg = f"""Time range must be at least as long as delta_time.
+        {end_datetime} - {start_datetime} < {delta_time}"""
+        raise ValueError(msg)
 
     # TODO: how to handle this?
     # Check if the time range is a multiple of delta_time
@@ -53,11 +56,13 @@ def validate_time_parameters(parsed_config: dict) -> None:
 
     # Check if delta_time is positive
     if delta_time <= timedelta(0):
-        raise ValueError("delta_time must be positive.")
+        msg = "delta_time must be positive."
+        raise ValueError(msg)
 
     # Check if start_date is not in the future
     if start_datetime > datetime.now():
-        raise ValueError("Start date cannot be in the future.")
+        msg = "Start date cannot be in the future."
+        raise ValueError(msg)
 
 
 def config_parser(config: dict = config) -> dict:
@@ -106,7 +111,7 @@ def config_parser(config: dict = config) -> dict:
     except ValueError as e:
         msg = f"Invalid start date or time format: {e}"
         logger.error(msg)
-        raise ValueError(msg)
+        raise ValueError(msg) from e
 
     # ------------ Parse the delta time ------------
     delta_time_mapping = {
@@ -134,7 +139,7 @@ def config_parser(config: dict = config) -> dict:
     except ValueError as e:
         msg = f"Error parsing delta_time from config: {e}"
         logger.error(msg)
-        raise ValueError(msg)
+        raise ValueError(msg) from e
 
     # ------------ Parse the end date and time ------------
     if (
@@ -150,7 +155,8 @@ def config_parser(config: dict = config) -> dict:
         parsed_config["end_time"] = parsed_config["start_time"]
         log_and_print(
             logger,
-            f"No end date/time, calculated as {parsed_config['end_date']} {parsed_config['end_time']} using start_date and start_time + delta_time",
+            f"""No end date/time, calculated as {parsed_config['end_date']}
+            {parsed_config['end_time']} using start_date and start_time + delta_time""",
             level="warning",
         )
     else:
@@ -164,7 +170,7 @@ def config_parser(config: dict = config) -> dict:
         except ValueError as e:
             msg = f"Invalid end time or date format in config: {e}"
             logger.error(msg)
-            raise ValueError(msg)
+            raise ValueError(msg) from e
 
     # Validate the time parameters
     validate_time_parameters(parsed_config)
@@ -180,7 +186,7 @@ def config_parser(config: dict = config) -> dict:
     except ValueError as e:
         msg = f"Error parsing variables from config: {e}"
         logger.error(msg)
-        raise ValueError(msg)
+        raise ValueError(msg) from e
 
     # ------------ Parse levels ------------
     try:
@@ -188,7 +194,7 @@ def config_parser(config: dict = config) -> dict:
     except ValueError as e:
         msg = f"Error parsing levels from config: {e}"
         logger.error(msg)
-        raise ValueError(msg)
+        raise ValueError(msg) from e
 
     # ------------ Generate save_name if not provided ------------
     if not config.get("save_name"):
@@ -265,7 +271,8 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
     Download ERA5 data from the specified source path and return an xarray Dataset.
 
     Args:
-        parsed_config (dict): Parsed configuration dictionary with the configuration parameters.
+        parsed_config (dict): Parsed configuration dictionary with the
+        configuration parameters.
 
     Returns:
         xr.Dataset: An xarray Dataset containing the downloaded ERA5 data.
@@ -325,16 +332,17 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         return era5_ds
 
     except Exception as e:
-        msg = f"Error {'creating mock' if use_mock_data else 'opening'} the ERA5 Dataset: {e}"
+        msg = f"""Error {'creating mock' if use_mock_data else 'opening'}
+        the ERA5 Dataset: {e}"""
         log_and_print(logger, msg, level="error")
-        raise ValueError(msg)
+        raise ValueError(msg) from e
 
 
 def main(use_mock_data: bool = False) -> None:
     """Main function to run the ERA5 download process."""
     try:
         parsed_config = config_parser()
-        era5_data = download_era5_data(parsed_config, use_mock_data)
+        download_era5_data(parsed_config, use_mock_data)
         log_and_print(logger, "ERA5 download process completed successfully.")
     except ValueError as e:
         log_and_print(logger, f"Configuration error: {e}", level="error")

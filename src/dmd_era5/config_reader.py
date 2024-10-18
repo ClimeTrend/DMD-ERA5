@@ -4,7 +4,7 @@ from configparser import ConfigParser
 
 from pyprojroot import here
 
-from .logger import setup_logger
+from dmd_era5.logger import setup_logger
 
 # Define the logger
 logger = setup_logger("ConfigReader", "config_reader.log")
