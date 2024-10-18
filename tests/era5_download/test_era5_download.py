@@ -206,18 +206,6 @@ def test_config_parser_generate_save_name(base_config):
     but got {parsed_config['save_name']}"""
 
 
-def test_config_parser_end_date_not_provided(base_config):
-    """Test that the end_date is correctly generated when left blank."""
-    base_config["end_date"] = ""
-    parsed_config = config_parser(base_config)
-    assert (
-        parsed_config["end_date"]
-        == parsed_config["start_date"] + parsed_config["delta_time"]
-    ), f"""Expected end_date to be
-    {parsed_config['start_date'] + parsed_config['delta_time']},
-    but got {parsed_config['end_date']}"""
-
-
 # ---- Test mock data ----
 
 

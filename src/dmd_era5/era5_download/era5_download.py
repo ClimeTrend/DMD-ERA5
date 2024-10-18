@@ -142,35 +142,15 @@ def config_parser(config: dict = config) -> dict:
         raise ValueError(msg) from e
 
     # ------------ Parse the end date and time ------------
-    if (
-        "end_date" not in config
-        or config["end_date"] == ""
-        or "end_time" not in config
-        or config["end_time"] == ""
-    ):
-        start_datetime = datetime.combine(
-            parsed_config["start_date"], parsed_config["start_time"]
-        )
-        parsed_config["end_date"] = start_datetime + parsed_config["delta_time"]
-        parsed_config["end_time"] = parsed_config["start_time"]
-        log_and_print(
-            logger,
-            f"""No end date/time, calculated as {parsed_config['end_date']}
-            {parsed_config['end_time']} using start_date and start_time + delta_time""",
-            level="warning",
-        )
-    else:
-        try:
-            parsed_config["end_date"] = datetime.strptime(
-                config["end_date"], "%Y-%m-%d"
-            )
-            parsed_config["end_time"] = datetime.strptime(
-                config["end_time"], "%H:%M:%S"
-            ).time()
-        except ValueError as e:
-            msg = f"Invalid end time or date format in config: {e}"
-            logger.error(msg)
-            raise ValueError(msg) from e
+    try:
+        parsed_config["end_date"] = datetime.strptime(config["end_date"], "%Y-%m-%d")
+        parsed_config["end_time"] = datetime.strptime(
+            config["end_time"], "%H:%M:%S"
+        ).time()
+    except ValueError as e:
+        msg = f"Invalid end time or date format in config: {e}"
+        logger.error(msg)
+        raise ValueError(msg) from e
 
     # Validate the time parameters
     validate_time_parameters(parsed_config)
