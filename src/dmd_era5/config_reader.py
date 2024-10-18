@@ -10,7 +10,7 @@ from dmd_era5.logger import setup_logger
 logger = setup_logger("ConfigReader", "config_reader.log")
 
 # Define the config_path variable
-CONFIG_PATH = os.path.join(here(), "src/dmd_era5/config.ini")
+CONFIG_PATH = os.path.join(here(), "config.ini")
 
 
 def config_reader(section: str, config_path: str = CONFIG_PATH) -> dict:
@@ -20,7 +20,7 @@ def config_reader(section: str, config_path: str = CONFIG_PATH) -> dict:
     Args:
         section (str): Section of the configuration file.
         config_path (str): Path to the configuration file.
-            Default is src/dmd_era5/config.ini.
+            Default is config.ini.
 
     Returns:
         dict: Dictionary with the configuration parameters.

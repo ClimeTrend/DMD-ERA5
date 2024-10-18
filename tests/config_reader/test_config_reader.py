@@ -20,7 +20,7 @@ def test_config_path():
 @pytest.fixture
 def actual_config_path():
     """Fixture for the current config path in the project."""
-    return os.path.join(here(), "src/dmd_era5/config.ini")
+    return os.path.join(here(), "config.ini")
 
 
 @pytest.fixture
@@ -59,7 +59,10 @@ def test_config_reader_returns_dict(test_config_reader):
 
 
 def test_config_reader_sections(test_config_reader):
-    """Test that the config_reader function returns the correct number of parameters for a given section."""
+    """
+    Test that the config_reader function returns the correct
+    number of parameters for a given section.
+    """
     config_section_0 = test_config_reader("test-section-0")
     assert (
         len(config_section_0) == 3
@@ -72,7 +75,8 @@ def test_config_reader_sections(test_config_reader):
     ), "Expected param_1 to be 'value_1' in test-section-0 from test config file."
     assert (
         config_section_0["param_2"] == "value_2.0,value_2.1"
-    ), "Expected param_2 to be 'value_2.0,value_2.1' in test-section-0 from test config file."
+    ), """Expected param_2 to be 'value_2.0,value_2.1'
+    in test-section-0 from test config file."""
 
     config_section_1 = test_config_reader("test-section-1")
     assert (
@@ -94,7 +98,7 @@ def test_config_reader_sections(test_config_reader):
 
 def test_config_nonexistent_section(test_config_reader):
     """Test that the config_reader function returns None for a nonexistent section."""
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="Section nonexistent-section not found"):
         test_config_reader("nonexistent-section")
 
 
