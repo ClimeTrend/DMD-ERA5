@@ -81,19 +81,19 @@ def test_config_parser_missing_field(base_config, field):
         config_parser(base_config)
 
 
-# --- Invalid date
+# --- Invalid datetime
 @pytest.mark.parametrize(
-    ("date_field", "invalid_date"),
+    ("datetime_field", "invalid_datetime"),
     [
-        ("start_date", "2019-02-31"),
-        ("start_date", "2019-13-01"),
-        ("start_date", "not-a-date"),
+        ("start_datetime", "2019-02-31"),
+        ("start_datetime", "2019-13-01"),
+        ("start_datetime", "2019-01-01T25"),
     ],
 )
-def test_config_parser_invalid_date(base_config, date_field, invalid_date):
-    """Test the invalid date error."""
-    base_config[date_field] = invalid_date
-    with pytest.raises(ValueError, match="Invalid start date or time format"):
+def test_config_parser_invalid_datetime(base_config, datetime_field, invalid_datetime):
+    """Test the invalid datetime error."""
+    base_config[datetime_field] = invalid_datetime
+    with pytest.raises(ValueError, match="Invalid start"):
         config_parser(base_config)
 
 
