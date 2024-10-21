@@ -39,11 +39,11 @@ def test_config_parser_basic(base_config):
     assert parsed_config["start_datetime"] == datetime(
         2019, 1, 1
     ), f"""start_datetime should be {datetime(2019, 1, 1, 0, 0)}
-    not {parsed_config['start_date']}"""
+    not {parsed_config['start_datetime']}"""
     assert parsed_config["end_datetime"] == datetime(
         2020, 1, 1
     ), f"""end_datetime should be {datetime(2019, 1, 2, 0, 0)}
-    not {parsed_config['end_date']}"""
+    not {parsed_config['end_datetime']}"""
     assert parsed_config["delta_time"] == timedelta(
         days=365
     ), f"delta_time should be {timedelta(hours=1)} not {parsed_config['delta_time']}"

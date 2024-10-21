@@ -55,7 +55,7 @@ def validate_time_parameters(parsed_config: dict) -> None:
         msg = "delta_time must be positive."
         raise ValueError(msg)
 
-    # Check if start_date is not in the future
+    # Check if start_datetime is not in the future
     if start_datetime > datetime.now():
         msg = "Start date cannot be in the future."
         raise ValueError(msg)
@@ -167,7 +167,7 @@ def config_parser(config: dict = config) -> dict:
     # ------------ Generate save_name if not provided ------------
     if not config.get("save_name"):
         # If left empty, the file will be saved with the following format:
-        # - "{start_date}_{end_date}_{delta_time}.nc"
+        # - "{start_datetime}_{end_datetime}_{delta_time}.nc"
 
         start_str = parsed_config["start_datetime"].strftime("%Y-%m-%dT%H")
         end_str = parsed_config["end_datetime"].strftime("%Y-%m-%dT%H")
@@ -187,9 +187,9 @@ def slice_era5_dataset(
 
     Args:
         ds (xr.Dataset): The input ERA5 dataset.
-        start_date (str): The start datetime for slicing, e.g. '2020-01-01T00'.
-        end_date (str): The end datetime for slicing, e.g. '2020-01-02T23'.
-        levels (List[int]): The pressure levels to select.
+        start_datetime (str): The start datetime for slicing, e.g. '2020-01-01T00'.
+        end_datetime (str): The end datetime for slicing, e.g. '2020-01-02T23'.
+        levels (list): The pressure levels to select.
 
     Returns:
         xr.Dataset: The sliced ERA5 dataset.
