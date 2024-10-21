@@ -228,8 +228,8 @@ def test_download_era5_data_mock(base_config):
 def test_slice_era5_dataset():
     """Test that the slice_era5_dataset function correctly slices the dataset."""
     mock_ds = create_mock_era5(
-        start_date="2019-01-01",
-        end_date="2019-01-05",
+        start_datetime="2019-01-01",
+        end_datetime="2019-01-05",
         variables=["temperature"],
         levels=[1000, 850, 500],
     )
@@ -254,8 +254,8 @@ def test_slice_era5_dataset():
 def test_thin_era5_dataset():
     """Test that the thin_era5_dataset function correctly thins the dataset."""
     mock_ds = create_mock_era5(
-        start_date="2019-01-01",
-        end_date="2019-01-02",
+        start_datetime="2019-01-01",
+        end_datetime="2019-01-02",
         variables=["temperature"],
         levels=[1000],
     )

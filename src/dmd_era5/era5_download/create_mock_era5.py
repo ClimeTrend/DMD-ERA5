@@ -3,13 +3,16 @@ import pandas as pd
 import xarray as xr
 
 
-def create_mock_era5(start_date, end_date, variables, levels):
+def create_mock_era5(start_datetime, end_datetime, variables, levels):
     """
     Create a mock ERA5-like dataset for testing purposes.
 
     Args:
-        start_date (str): Start date in 'YYYY-MM-DD' format
-        end_date (str): End date in 'YYYY-MM-DD' format
+        start_datetime (str):
+            Start date in 'YYYY-MM-DDTHH:MM' format, e.g. '2020-01-01' or
+            '2020-01-01T00'
+        end_datetime (str):
+            End date in 'YYYY-MM-DDTHH' format, e.g. '2020-01-02' or '2020-01-02T23'
         variables (list): List of variable names
         levels (list): List of pressure levels
 
@@ -17,7 +20,7 @@ def create_mock_era5(start_date, end_date, variables, levels):
         xr.Dataset: A mock ERA5-like dataset
     """
     # Create time range
-    times = pd.date_range(start=start_date, end=end_date, freq="h")
+    times = pd.date_range(start=start_datetime, end=end_datetime, freq="h")
 
     # Create latitude and longitude ranges (reduced resolution for testing)
     lats = np.arange(90, -90, -5)

@@ -262,8 +262,8 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         if use_mock_data:
             log_and_print(logger, "Creating mock ERA5 data...")
             full_era5_ds = create_mock_era5(
-                start_date=parsed_config["start_date"].strftime("%Y-%m-%d"),
-                end_date=parsed_config["end_date"].strftime("%Y-%m-%d"),
+                start_datetime=parsed_config["start_date"].strftime("%Y-%m-%d"),
+                end_datetime=parsed_config["end_date"].strftime("%Y-%m-%d"),
                 variables=parsed_config["variables"]
                 if parsed_config["variables"] != ["all"]
                 else ["temperature", "u_component_of_wind", "v_component_of_wind"],
