@@ -8,11 +8,10 @@ def create_mock_era5(start_datetime, end_datetime, variables, levels):
     Create a mock ERA5-like dataset for testing purposes.
 
     Args:
-        start_datetime (str):
-            Start date in 'YYYY-MM-DDTHH:MM' format, e.g. '2020-01-01' or
-            '2020-01-01T00'
-        end_datetime (str):
-            End date in 'YYYY-MM-DDTHH' format, e.g. '2020-01-02' or '2020-01-02T23'
+        start_datetime (str or datetime-like):
+            Start datetime of the dataset, e.g. "2020-01-01T06"
+        end_datetime (str or datetime-like):
+            End datetime of the dataset, e.g. ""2020-01-05"
         variables (list): List of variable names
         levels (list): List of pressure levels
 
