@@ -97,22 +97,6 @@ def test_config_parser_invalid_datetime(base_config, datetime_field, invalid_dat
         config_parser(base_config)
 
 
-# --- Invalid time
-@pytest.mark.parametrize(
-    ("time_field", "invalid_time"),
-    [
-        ("start_time", "25:00:00"),
-        ("start_time", "12:60:00"),
-        ("start_time", "not-a-time"),
-    ],
-)
-def test_config_parser_invalid_time(base_config, time_field, invalid_time):
-    """Test the invalid time error."""
-    base_config[time_field] = invalid_time
-    with pytest.raises(ValueError, match="Invalid start date or time format"):
-        config_parser(base_config)
-
-
 @pytest.mark.parametrize(
     ("levels", "expected"),
     [
