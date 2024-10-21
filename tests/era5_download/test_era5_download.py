@@ -256,8 +256,8 @@ def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
     Test the full pipeline of downloading, slicing, and
     thinning ERA5 data using a mock dataset.
     """
-    base_config["start_date"] = "2019-01-01"
-    base_config["end_date"] = "2019-01-05"
+    base_config["start_datetime"] = "2019-01-01T06"
+    base_config["end_datetime"] = "2019-01-05T18"
     base_config["delta_time"] = "6h"
     base_config["levels"] = "1000,500"
     parsed_config = config_parser(base_config)
@@ -266,10 +266,10 @@ def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
 
     assert era5_data.time.min().values.astype("datetime64[us]").astype(
         datetime
-    ) == datetime(2019, 1, 1)
+    ) == datetime(2019, 1, 1, 6)
     assert era5_data.time.max().values.astype("datetime64[us]").astype(
         datetime
-    ) == datetime(2019, 1, 5)
+    ) == datetime(2019, 1, 5, 18)
     assert list(era5_data.level.values) == [1000, 500]
     assert (
         era5_data.time.diff("time").astype("timedelta64[ns]").astype(int)
