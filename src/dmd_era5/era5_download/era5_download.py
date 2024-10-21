@@ -30,12 +30,8 @@ def validate_time_parameters(parsed_config: dict) -> None:
         ValueError: If any of the time parameters are invalid or inconsistent.
     """
 
-    start_datetime = datetime.combine(
-        parsed_config["start_date"], parsed_config["start_time"]
-    )
-    end_datetime = datetime.combine(
-        parsed_config["end_date"], parsed_config["end_time"]
-    )
+    start_datetime = parsed_config["start_datetime"]
+    end_datetime = parsed_config["end_datetime"]
     delta_time = parsed_config["delta_time"]
 
     # Check if end datetime is after start datetime
@@ -81,10 +77,8 @@ def config_parser(config: dict = config) -> dict:
     # Validate the required fields
     required_fields = [
         "source_path",
-        "start_date",
-        "start_time",
-        "end_date",
-        "end_time",
+        "start_datetime",
+        "end_datetime",
         "delta_time",
         "variables",
         "levels",
@@ -102,14 +96,11 @@ def config_parser(config: dict = config) -> dict:
 
     # ------------ Parse the start date and time ------------
     try:
-        parsed_config["start_date"] = datetime.strptime(
-            config["start_date"], "%Y-%m-%d"
+        parsed_config["start_datetime"] = datetime.fromisoformat(
+            config["start_datetime"]
         )
-        parsed_config["start_time"] = datetime.strptime(
-            config["start_time"], "%H:%M:%S"
-        ).time()
     except ValueError as e:
-        msg = f"Invalid start date or time format: {e}"
+        msg = f"Invalid start datetime format in config: {e}"
         logger.error(msg)
         raise ValueError(msg) from e
 
@@ -143,12 +134,9 @@ def config_parser(config: dict = config) -> dict:
 
     # ------------ Parse the end date and time ------------
     try:
-        parsed_config["end_date"] = datetime.strptime(config["end_date"], "%Y-%m-%d")
-        parsed_config["end_time"] = datetime.strptime(
-            config["end_time"], "%H:%M:%S"
-        ).time()
+        parsed_config["end_datetime"] = datetime.fromisoformat(config["end_datetime"])
     except ValueError as e:
-        msg = f"Invalid end time or date format in config: {e}"
+        msg = f"Invalid end datetime format in config: {e}"
         logger.error(msg)
         raise ValueError(msg) from e
 
@@ -181,8 +169,8 @@ def config_parser(config: dict = config) -> dict:
         # If left empty, the file will be saved with the following format:
         # - "{start_date}_{end_date}_{delta_time}.nc"
 
-        start_str = parsed_config["start_date"].strftime("%Y-%m-%d")
-        end_str = parsed_config["end_date"].strftime("%Y-%m-%d")
+        start_str = parsed_config["start_datetime"].strftime("%Y-%m-%dT%H")
+        end_str = parsed_config["end_datetime"].strftime("%Y-%m-%dT%H")
         delta_str = config["delta_time"]
         parsed_config["save_name"] = f"{start_str}_{end_str}_{delta_str}.nc"
     else:

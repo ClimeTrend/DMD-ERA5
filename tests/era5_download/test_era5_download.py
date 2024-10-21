@@ -20,10 +20,8 @@ from dmd_era5.era5_download import (
 def base_config():
     return {
         "source_path": "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
-        "start_date": "2019-01-01",
-        "start_time": "00:00:00",
-        "end_date": "2020-01-01",
-        "end_time": "00:00:01",
+        "start_datetime": "2019-01-01T00",
+        "end_datetime": "2020-01-01T00",
         "delta_time": "1y",
         "variables": "all",
         "levels": "1000",
@@ -38,13 +36,13 @@ def test_config_parser_basic(base_config):
         parsed_config["source_path"] == base_config["source_path"]
     ), f"""source_path should be {base_config['source_path']}
     not {parsed_config['source_path']}"""
-    assert parsed_config["start_date"] == datetime(
+    assert parsed_config["start_datetime"] == datetime(
         2019, 1, 1
-    ), f"""start_date should be {datetime(2019, 1, 1, 0, 0)}
+    ), f"""start_datetime should be {datetime(2019, 1, 1, 0, 0)}
     not {parsed_config['start_date']}"""
-    assert parsed_config["end_date"] == datetime(
+    assert parsed_config["end_datetime"] == datetime(
         2020, 1, 1
-    ), f"""end_date should be {datetime(2019, 1, 2, 0, 0)}
+    ), f"""end_datetime should be {datetime(2019, 1, 2, 0, 0)}
     not {parsed_config['end_date']}"""
     assert parsed_config["delta_time"] == timedelta(
         days=365
@@ -56,8 +54,8 @@ def test_config_parser_basic(base_config):
         1000
     ], f"levels should be [1000] not {parsed_config['levels']}"
     assert (
-        parsed_config["save_name"] == "2019-01-01_2020-01-01_1y.nc"
-    ), f"""save_name should be 2019-01-01_2020-01-01_1y.nc
+        parsed_config["save_name"] == "2019-01-01T00_2020-01-01T00_1y.nc"
+    ), f"""save_name should be 2019-01-01T00_2020-01-01T00_1y.nc
     not {parsed_config['save_name']}"""
 
 
