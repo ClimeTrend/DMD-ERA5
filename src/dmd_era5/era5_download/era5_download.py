@@ -225,8 +225,8 @@ def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
         xr.Dataset: The ERA5 dataset with the configuration settings as attributes.
     """
     ds.attrs["source_path"] = parsed_config["source_path"]
-    ds.attrs["start_date"] = parsed_config["start_date"].strftime("%Y-%m-%d")
-    ds.attrs["end_date"] = parsed_config["end_date"].strftime("%Y-%m-%d")
+    ds.attrs["start_datetime"] = parsed_config["start_datetime"].isoformat()
+    ds.attrs["end_datetime"] = parsed_config["end_datetime"].isoformat()
     ds.attrs["delta_time"] = parsed_config["delta_time"]
     ds.attrs["variables"] = parsed_config["variables"]
     ds.attrs["levels"] = parsed_config["levels"]
@@ -250,8 +250,8 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         if use_mock_data:
             log_and_print(logger, "Creating mock ERA5 data...")
             full_era5_ds = create_mock_era5(
-                start_datetime=parsed_config["start_date"].strftime("%Y-%m-%d"),
-                end_datetime=parsed_config["end_date"].strftime("%Y-%m-%d"),
+                start_datetime=parsed_config["start_datetime"],
+                end_datetime=parsed_config["end_datetime"],
                 variables=parsed_config["variables"]
                 if parsed_config["variables"] != ["all"]
                 else ["temperature", "u_component_of_wind", "v_component_of_wind"],
@@ -277,8 +277,8 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         log_and_print(logger, "Slicing ERA5 Dataset...")
         era5_ds = slice_era5_dataset(
             full_era5_ds,
-            parsed_config["start_date"],
-            parsed_config["end_date"],
+            parsed_config["start_datetime"],
+            parsed_config["end_datetime"],
             parsed_config["levels"],
         )
 
@@ -301,7 +301,7 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
 
     except Exception as e:
         msg = f"""Error {'creating mock' if use_mock_data else 'opening'}
-        the ERA5 Dataset: {e}"""
+        ERA5 Dataset: {e}"""
         log_and_print(logger, msg, level="error")
         raise ValueError(msg) from e
 
