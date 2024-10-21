@@ -7,8 +7,7 @@ from __future__ import annotations
 from importlib.metadata import version
 
 from dmd_era5.config_reader import config_reader
-from dmd_era5.logger import setup_logger, log_and_print
-
+from dmd_era5.logger import log_and_print, setup_logger
 
 __all__ = [
     "config_reader",

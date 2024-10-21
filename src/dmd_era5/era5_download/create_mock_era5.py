@@ -63,7 +63,7 @@ def create_mock_era5(start_date, end_date, variables, levels):
         )
 
     # Create the dataset
-    ds = xr.Dataset(
+    return xr.Dataset(
         data_vars=data_vars,
         attrs={
             "Conventions": "CF-1.6",
@@ -71,5 +71,3 @@ def create_mock_era5(start_date, end_date, variables, levels):
             "source": "Generated mock data",
         },
     )
-
-    return ds
