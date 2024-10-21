@@ -199,7 +199,8 @@ def slice_era5_dataset(
 
 def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
     """
-    Thin the ERA5 dataset based on the specified time delta.
+    Thin the ERA5 dataset along the time dimension based
+    on the specified time delta.
 
     Args:
         ds (xr.Dataset): The input ERA5 dataset.
@@ -209,8 +210,7 @@ def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
         xr.Dataset: The thinned ERA5 dataset.
     """
 
-    thinning_factor = int(delta_time.total_seconds() / 3600)
-    return ds.thin(time=thinning_factor)
+    return ds.resample(time=delta_time).nearest()
 
 
 def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
