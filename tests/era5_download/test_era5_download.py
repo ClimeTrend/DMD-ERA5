@@ -228,8 +228,8 @@ def test_download_era5_data_mock(base_config):
 def test_slice_era5_dataset():
     """Test that the slice_era5_dataset function correctly slices the dataset."""
     mock_ds = create_mock_era5(
-        start_datetime="2019-01-01",
-        end_datetime="2019-01-05",
+        start_datetime="2019-01-01T00:00",
+        end_datetime="2019-01-05T00:00",
         variables=["temperature"],
         levels=[1000, 850, 500],
     )
@@ -237,17 +237,17 @@ def test_slice_era5_dataset():
     # Test slicing
     sliced_ds = slice_era5_dataset(
         mock_ds,
-        start_date=datetime(2019, 1, 2),
-        end_date=datetime(2019, 1, 4),
+        start_datetime="2019-01-02T06:00",
+        end_datetime="2019-01-04T23:00",
         levels=[1000, 500],
     )
 
     assert sliced_ds.time.min().values.astype("datetime64[us]").astype(
         datetime
-    ) == datetime(2019, 1, 2)
+    ) == datetime(2019, 1, 2, 6)
     assert sliced_ds.time.max().values.astype("datetime64[us]").astype(
         datetime
-    ) == datetime(2019, 1, 4)
+    ) == datetime(2019, 1, 4, 23)
     assert list(sliced_ds.level.values) == [1000, 500]
 
 

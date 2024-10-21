@@ -192,21 +192,21 @@ def config_parser(config: dict = config) -> dict:
 
 
 def slice_era5_dataset(
-    ds: xr.Dataset, start_date: datetime, end_date: datetime, levels: list
+    ds: xr.Dataset, start_datetime: str, end_datetime: str, levels: list
 ) -> xr.Dataset:
     """
     Slice the ERA5 dataset based on time range and pressure levels.
 
     Args:
         ds (xr.Dataset): The input ERA5 dataset.
-        start_date (datetime): The start date for slicing.
-        end_date (datetime): The end date for slicing.
+        start_date (str): The start datetime for slicing, e.g. '2020-01-01T00'.
+        end_date (str): The end datetime for slicing, e.g. '2020-01-02T23'.
         levels (List[int]): The pressure levels to select.
 
     Returns:
         xr.Dataset: The sliced ERA5 dataset.
     """
-    return ds.sel(time=slice(start_date, end_date), level=levels)
+    return ds.sel(time=slice(start_datetime, end_datetime), level=levels)
 
 
 def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
