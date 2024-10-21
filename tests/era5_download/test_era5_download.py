@@ -67,10 +67,8 @@ def test_config_parser_basic(base_config):
     "field",
     [
         "source_path",
-        "start_date",
-        "start_time",
-        "end_date",
-        "end_time",
+        "start_datetime",
+        "end_datetime",
         "delta_time",
         "variables",
         "levels",
