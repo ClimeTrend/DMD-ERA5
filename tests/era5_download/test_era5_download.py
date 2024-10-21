@@ -173,13 +173,13 @@ def test_config_parser_custom_save_name(base_config, save_name):
 def test_config_parser_generate_save_name(base_config):
     """Test that the save_name is correctly generated when left blank."""
     base_config["save_name"] = ""  # Set save_name to an empty string
-    base_config["start_date"] = "2023-01-01"
-    base_config["end_date"] = "2023-12-31"
+    base_config["start_datetime"] = "2023-01-01"
+    base_config["end_datetime"] = "2023-12-31"
     base_config["delta_time"] = "1d"
 
     parsed_config = config_parser(base_config)
 
-    expected_save_name = "2023-01-01_2023-12-31_1d.nc"
+    expected_save_name = "2023-01-01T00_2023-12-31T00_1d.nc"
     assert (
         parsed_config["save_name"] == expected_save_name
     ), f"""Expected save_name to be {expected_save_name},
