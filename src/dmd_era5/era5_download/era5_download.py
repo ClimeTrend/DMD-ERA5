@@ -227,7 +227,7 @@ def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
     ds.attrs["source_path"] = parsed_config["source_path"]
     ds.attrs["start_datetime"] = parsed_config["start_datetime"].isoformat()
     ds.attrs["end_datetime"] = parsed_config["end_datetime"].isoformat()
-    ds.attrs["delta_time"] = parsed_config["delta_time"]
+    ds.attrs["hours_delta_time"] = parsed_config["delta_time"].total_seconds() / 3600
     ds.attrs["variables"] = parsed_config["variables"]
     ds.attrs["levels"] = parsed_config["levels"]
     ds.attrs["date_downloaded"] = datetime.now().isoformat()
