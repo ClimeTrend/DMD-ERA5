@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 
+import numpy as np
 import xarray as xr
 from pyprojroot import here
 
@@ -294,6 +295,9 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         if not use_mock_data:
             output_path = os.path.join(
                 here(), "data/era5_download", parsed_config["save_name"]
+            )
+            log_and_print(
+                logger, f"Size of ERA5 Dataset: {np.round(era5_ds.nbytes / 1e6)} MB"
             )
             log_and_print(logger, f"Saving ERA5 Dataset to {output_path}...")
             era5_ds.to_netcdf(output_path, format="NETCDF4")
