@@ -292,7 +292,9 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
 
         # Save the dataset as NetCDF
         if not use_mock_data:
-            output_path = os.path.join(here(), "data", parsed_config["save_name"])
+            output_path = os.path.join(
+                here(), "data/era5_download", parsed_config["save_name"]
+            )
             log_and_print(logger, f"Saving ERA5 Dataset to {output_path}...")
             era5_ds.to_netcdf(output_path, format="NETCDF4")
             log_and_print(logger, "ERA5 Dataset saved.")
