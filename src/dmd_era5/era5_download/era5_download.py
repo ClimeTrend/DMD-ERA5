@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 
+import numpy as np
 import xarray as xr
 from pyprojroot import here
 
@@ -30,12 +31,8 @@ def validate_time_parameters(parsed_config: dict) -> None:
         ValueError: If any of the time parameters are invalid or inconsistent.
     """
 
-    start_datetime = datetime.combine(
-        parsed_config["start_date"], parsed_config["start_time"]
-    )
-    end_datetime = datetime.combine(
-        parsed_config["end_date"], parsed_config["end_time"]
-    )
+    start_datetime = parsed_config["start_datetime"]
+    end_datetime = parsed_config["end_datetime"]
     delta_time = parsed_config["delta_time"]
 
     # Check if end datetime is after start datetime
@@ -59,7 +56,7 @@ def validate_time_parameters(parsed_config: dict) -> None:
         msg = "delta_time must be positive."
         raise ValueError(msg)
 
-    # Check if start_date is not in the future
+    # Check if start_datetime is not in the future
     if start_datetime > datetime.now():
         msg = "Start date cannot be in the future."
         raise ValueError(msg)
@@ -81,10 +78,8 @@ def config_parser(config: dict = config) -> dict:
     # Validate the required fields
     required_fields = [
         "source_path",
-        "start_date",
-        "start_time",
-        "end_date",
-        "end_time",
+        "start_datetime",
+        "end_datetime",
         "delta_time",
         "variables",
         "levels",
@@ -102,14 +97,11 @@ def config_parser(config: dict = config) -> dict:
 
     # ------------ Parse the start date and time ------------
     try:
-        parsed_config["start_date"] = datetime.strptime(
-            config["start_date"], "%Y-%m-%d"
+        parsed_config["start_datetime"] = datetime.fromisoformat(
+            config["start_datetime"]
         )
-        parsed_config["start_time"] = datetime.strptime(
-            config["start_time"], "%H:%M:%S"
-        ).time()
     except ValueError as e:
-        msg = f"Invalid start date or time format: {e}"
+        msg = f"Invalid start datetime format in config: {e}"
         logger.error(msg)
         raise ValueError(msg) from e
 
@@ -143,12 +135,9 @@ def config_parser(config: dict = config) -> dict:
 
     # ------------ Parse the end date and time ------------
     try:
-        parsed_config["end_date"] = datetime.strptime(config["end_date"], "%Y-%m-%d")
-        parsed_config["end_time"] = datetime.strptime(
-            config["end_time"], "%H:%M:%S"
-        ).time()
+        parsed_config["end_datetime"] = datetime.fromisoformat(config["end_datetime"])
     except ValueError as e:
-        msg = f"Invalid end time or date format in config: {e}"
+        msg = f"Invalid end datetime format in config: {e}"
         logger.error(msg)
         raise ValueError(msg) from e
 
@@ -179,10 +168,10 @@ def config_parser(config: dict = config) -> dict:
     # ------------ Generate save_name if not provided ------------
     if not config.get("save_name"):
         # If left empty, the file will be saved with the following format:
-        # - "{start_date}_{end_date}_{delta_time}.nc"
+        # - "{start_datetime}_{end_datetime}_{delta_time}.nc"
 
-        start_str = parsed_config["start_date"].strftime("%Y-%m-%d")
-        end_str = parsed_config["end_date"].strftime("%Y-%m-%d")
+        start_str = parsed_config["start_datetime"].strftime("%Y-%m-%dT%H")
+        end_str = parsed_config["end_datetime"].strftime("%Y-%m-%dT%H")
         delta_str = config["delta_time"]
         parsed_config["save_name"] = f"{start_str}_{end_str}_{delta_str}.nc"
     else:
@@ -192,26 +181,27 @@ def config_parser(config: dict = config) -> dict:
 
 
 def slice_era5_dataset(
-    ds: xr.Dataset, start_date: datetime, end_date: datetime, levels: list
+    ds: xr.Dataset, start_datetime: str, end_datetime: str, levels: list
 ) -> xr.Dataset:
     """
     Slice the ERA5 dataset based on time range and pressure levels.
 
     Args:
         ds (xr.Dataset): The input ERA5 dataset.
-        start_date (datetime): The start date for slicing.
-        end_date (datetime): The end date for slicing.
-        levels (List[int]): The pressure levels to select.
+        start_datetime (str): The start datetime for slicing, e.g. '2020-01-01T00'.
+        end_datetime (str): The end datetime for slicing, e.g. '2020-01-02T23'.
+        levels (list): The pressure levels to select.
 
     Returns:
         xr.Dataset: The sliced ERA5 dataset.
     """
-    return ds.sel(time=slice(start_date, end_date), level=levels)
+    return ds.sel(time=slice(start_datetime, end_datetime), level=levels)
 
 
 def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
     """
-    Thin the ERA5 dataset based on the specified time delta.
+    Thin the ERA5 dataset along the time dimension based
+    on the specified time delta.
 
     Args:
         ds (xr.Dataset): The input ERA5 dataset.
@@ -221,8 +211,7 @@ def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
         xr.Dataset: The thinned ERA5 dataset.
     """
 
-    thinning_factor = int(delta_time.total_seconds() / 3600)
-    return ds.thin(time=thinning_factor)
+    return ds.resample(time=delta_time).nearest()
 
 
 def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
@@ -237,9 +226,9 @@ def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
         xr.Dataset: The ERA5 dataset with the configuration settings as attributes.
     """
     ds.attrs["source_path"] = parsed_config["source_path"]
-    ds.attrs["start_date"] = parsed_config["start_date"].strftime("%Y-%m-%d")
-    ds.attrs["end_date"] = parsed_config["end_date"].strftime("%Y-%m-%d")
-    ds.attrs["delta_time"] = parsed_config["delta_time"]
+    ds.attrs["start_datetime"] = parsed_config["start_datetime"].isoformat()
+    ds.attrs["end_datetime"] = parsed_config["end_datetime"].isoformat()
+    ds.attrs["hours_delta_time"] = parsed_config["delta_time"].total_seconds() / 3600
     ds.attrs["variables"] = parsed_config["variables"]
     ds.attrs["levels"] = parsed_config["levels"]
     ds.attrs["date_downloaded"] = datetime.now().isoformat()
@@ -262,8 +251,8 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         if use_mock_data:
             log_and_print(logger, "Creating mock ERA5 data...")
             full_era5_ds = create_mock_era5(
-                start_date=parsed_config["start_date"].strftime("%Y-%m-%d"),
-                end_date=parsed_config["end_date"].strftime("%Y-%m-%d"),
+                start_datetime=parsed_config["start_datetime"],
+                end_datetime=parsed_config["end_datetime"],
                 variables=parsed_config["variables"]
                 if parsed_config["variables"] != ["all"]
                 else ["temperature", "u_component_of_wind", "v_component_of_wind"],
@@ -289,8 +278,8 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         log_and_print(logger, "Slicing ERA5 Dataset...")
         era5_ds = slice_era5_dataset(
             full_era5_ds,
-            parsed_config["start_date"],
-            parsed_config["end_date"],
+            parsed_config["start_datetime"],
+            parsed_config["end_datetime"],
             parsed_config["levels"],
         )
 
@@ -304,7 +293,12 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
 
         # Save the dataset as NetCDF
         if not use_mock_data:
-            output_path = os.path.join(here(), "data", parsed_config["save_name"])
+            output_path = os.path.join(
+                here(), "data/era5_download", parsed_config["save_name"]
+            )
+            log_and_print(
+                logger, f"Size of ERA5 Dataset: {np.round(era5_ds.nbytes / 1e6)} MB"
+            )
             log_and_print(logger, f"Saving ERA5 Dataset to {output_path}...")
             era5_ds.to_netcdf(output_path, format="NETCDF4")
             log_and_print(logger, "ERA5 Dataset saved.")
@@ -312,8 +306,9 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         return era5_ds
 
     except Exception as e:
-        msg = f"""Error {'creating mock' if use_mock_data else 'opening'}
-        the ERA5 Dataset: {e}"""
+        msg = f"""
+        Error {'creating mock' if use_mock_data else 'downloading'} ERA5 Dataset: {e}
+        """
         log_and_print(logger, msg, level="error")
         raise ValueError(msg) from e
 

@@ -29,6 +29,8 @@ classifiers = [
 dependencies = ["xarray",
     "netCDF4",
     "zarr",
+    "fsspec",
+    "gcsfs",
     "pyprojroot"]
 
 [project.optional-dependencies]

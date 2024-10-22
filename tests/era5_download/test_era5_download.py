@@ -20,10 +20,8 @@ from dmd_era5.era5_download import (
 def base_config():
     return {
         "source_path": "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
-        "start_date": "2019-01-01",
-        "start_time": "00:00:00",
-        "end_date": "2020-01-01",
-        "end_time": "00:00:01",
+        "start_datetime": "2019-01-01T00",
+        "end_datetime": "2020-01-01T00",
         "delta_time": "1y",
         "variables": "all",
         "levels": "1000",
@@ -38,14 +36,14 @@ def test_config_parser_basic(base_config):
         parsed_config["source_path"] == base_config["source_path"]
     ), f"""source_path should be {base_config['source_path']}
     not {parsed_config['source_path']}"""
-    assert parsed_config["start_date"] == datetime(
+    assert parsed_config["start_datetime"] == datetime(
         2019, 1, 1
-    ), f"""start_date should be {datetime(2019, 1, 1, 0, 0)}
-    not {parsed_config['start_date']}"""
-    assert parsed_config["end_date"] == datetime(
+    ), f"""start_datetime should be {datetime(2019, 1, 1, 0, 0)}
+    not {parsed_config['start_datetime']}"""
+    assert parsed_config["end_datetime"] == datetime(
         2020, 1, 1
-    ), f"""end_date should be {datetime(2019, 1, 2, 0, 0)}
-    not {parsed_config['end_date']}"""
+    ), f"""end_datetime should be {datetime(2019, 1, 2, 0, 0)}
+    not {parsed_config['end_datetime']}"""
     assert parsed_config["delta_time"] == timedelta(
         days=365
     ), f"delta_time should be {timedelta(hours=1)} not {parsed_config['delta_time']}"
@@ -56,8 +54,8 @@ def test_config_parser_basic(base_config):
         1000
     ], f"levels should be [1000] not {parsed_config['levels']}"
     assert (
-        parsed_config["save_name"] == "2019-01-01_2020-01-01_1y.nc"
-    ), f"""save_name should be 2019-01-01_2020-01-01_1y.nc
+        parsed_config["save_name"] == "2019-01-01T00_2020-01-01T00_1y.nc"
+    ), f"""save_name should be 2019-01-01T00_2020-01-01T00_1y.nc
     not {parsed_config['save_name']}"""
 
 
@@ -69,10 +67,8 @@ def test_config_parser_basic(base_config):
     "field",
     [
         "source_path",
-        "start_date",
-        "start_time",
-        "end_date",
-        "end_time",
+        "start_datetime",
+        "end_datetime",
         "delta_time",
         "variables",
         "levels",
@@ -85,35 +81,19 @@ def test_config_parser_missing_field(base_config, field):
         config_parser(base_config)
 
 
-# --- Invalid date
+# --- Invalid datetime
 @pytest.mark.parametrize(
-    ("date_field", "invalid_date"),
+    ("datetime_field", "invalid_datetime"),
     [
-        ("start_date", "2019-02-31"),
-        ("start_date", "2019-13-01"),
-        ("start_date", "not-a-date"),
+        ("start_datetime", "2019-02-31"),
+        ("start_datetime", "2019-13-01"),
+        ("start_datetime", "2019-01-01T25"),
     ],
 )
-def test_config_parser_invalid_date(base_config, date_field, invalid_date):
-    """Test the invalid date error."""
-    base_config[date_field] = invalid_date
-    with pytest.raises(ValueError, match="Invalid start date or time format"):
-        config_parser(base_config)
-
-
-# --- Invalid time
-@pytest.mark.parametrize(
-    ("time_field", "invalid_time"),
-    [
-        ("start_time", "25:00:00"),
-        ("start_time", "12:60:00"),
-        ("start_time", "not-a-time"),
-    ],
-)
-def test_config_parser_invalid_time(base_config, time_field, invalid_time):
-    """Test the invalid time error."""
-    base_config[time_field] = invalid_time
-    with pytest.raises(ValueError, match="Invalid start date or time format"):
+def test_config_parser_invalid_datetime(base_config, datetime_field, invalid_datetime):
+    """Test the invalid datetime error."""
+    base_config[datetime_field] = invalid_datetime
+    with pytest.raises(ValueError, match="Invalid start"):
         config_parser(base_config)
 
 
@@ -193,13 +173,13 @@ def test_config_parser_custom_save_name(base_config, save_name):
 def test_config_parser_generate_save_name(base_config):
     """Test that the save_name is correctly generated when left blank."""
     base_config["save_name"] = ""  # Set save_name to an empty string
-    base_config["start_date"] = "2023-01-01"
-    base_config["end_date"] = "2023-12-31"
+    base_config["start_datetime"] = "2023-01-01"
+    base_config["end_datetime"] = "2023-12-31"
     base_config["delta_time"] = "1d"
 
     parsed_config = config_parser(base_config)
 
-    expected_save_name = "2023-01-01_2023-12-31_1d.nc"
+    expected_save_name = "2023-01-01T00_2023-12-31T00_1d.nc"
     assert (
         parsed_config["save_name"] == expected_save_name
     ), f"""Expected save_name to be {expected_save_name},
@@ -228,8 +208,8 @@ def test_download_era5_data_mock(base_config):
 def test_slice_era5_dataset():
     """Test that the slice_era5_dataset function correctly slices the dataset."""
     mock_ds = create_mock_era5(
-        start_date="2019-01-01",
-        end_date="2019-01-05",
+        start_datetime="2019-01-01T00:00",
+        end_datetime="2019-01-05T00:00",
         variables=["temperature"],
         levels=[1000, 850, 500],
     )
@@ -237,25 +217,25 @@ def test_slice_era5_dataset():
     # Test slicing
     sliced_ds = slice_era5_dataset(
         mock_ds,
-        start_date=datetime(2019, 1, 2),
-        end_date=datetime(2019, 1, 4),
+        start_datetime="2019-01-02T06:00",
+        end_datetime="2019-01-04T23:00",
         levels=[1000, 500],
     )
 
     assert sliced_ds.time.min().values.astype("datetime64[us]").astype(
         datetime
-    ) == datetime(2019, 1, 2)
+    ) == datetime(2019, 1, 2, 6)
     assert sliced_ds.time.max().values.astype("datetime64[us]").astype(
         datetime
-    ) == datetime(2019, 1, 4)
+    ) == datetime(2019, 1, 4, 23)
     assert list(sliced_ds.level.values) == [1000, 500]
 
 
 def test_thin_era5_dataset():
     """Test that the thin_era5_dataset function correctly thins the dataset."""
     mock_ds = create_mock_era5(
-        start_date="2019-01-01",
-        end_date="2019-01-02",
+        start_datetime="2019-01-01",
+        end_datetime="2019-01-02",
         variables=["temperature"],
         levels=[1000],
     )
@@ -276,8 +256,8 @@ def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
     Test the full pipeline of downloading, slicing, and
     thinning ERA5 data using a mock dataset.
     """
-    base_config["start_date"] = "2019-01-01"
-    base_config["end_date"] = "2019-01-05"
+    base_config["start_datetime"] = "2019-01-01T06"
+    base_config["end_datetime"] = "2019-01-05T18"
     base_config["delta_time"] = "6h"
     base_config["levels"] = "1000,500"
     parsed_config = config_parser(base_config)
@@ -286,10 +266,10 @@ def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
 
     assert era5_data.time.min().values.astype("datetime64[us]").astype(
         datetime
-    ) == datetime(2019, 1, 1)
+    ) == datetime(2019, 1, 1, 6)
     assert era5_data.time.max().values.astype("datetime64[us]").astype(
         datetime
-    ) == datetime(2019, 1, 5)
+    ) == datetime(2019, 1, 5, 18)
     assert list(era5_data.level.values) == [1000, 500]
     assert (
         era5_data.time.diff("time").astype("timedelta64[ns]").astype(int)

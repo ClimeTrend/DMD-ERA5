@@ -109,8 +109,10 @@ def test_actual_config_era5_download_section(actual_config_reader):
     """Test the contents of era5-download section in the actual configuration."""
     config = actual_config_reader("era5-download")
     assert "source_path" in config, "era5-download section should have a source_path"
-    assert "start_date" in config, "era5-download section should have a start_date"
-    assert "end_date" in config, "era5-download section should have an end_date"
+    assert (
+        "start_datetime" in config
+    ), "era5-download section should have a start_datetime"
+    assert "end_datetime" in config, "era5-download section should have an end_datetime"
     assert "delta_time" in config, "era5-download section should have a delta_time"
     assert "variables" in config, "era5-download section should have variables"
 
