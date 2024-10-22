@@ -306,8 +306,9 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         return era5_ds
 
     except Exception as e:
-        msg = f"""Error {'creating mock' if use_mock_data else 'opening'}
-        ERA5 Dataset: {e}"""
+        msg = f"""
+        Error {'creating mock' if use_mock_data else 'downloading'} ERA5 Dataset: {e}
+        """
         log_and_print(logger, msg, level="error")
         raise ValueError(msg) from e
 
