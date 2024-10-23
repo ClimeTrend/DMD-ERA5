@@ -31,7 +31,8 @@ dependencies = ["xarray",
     "zarr",
     "fsspec",
     "gcsfs",
-    "pyprojroot"]
+    "pyprojroot",
+    "scikit-learn",]
 
 [project.optional-dependencies]
 dev = [
