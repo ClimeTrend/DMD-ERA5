@@ -46,11 +46,6 @@ def validate_time_parameters(parsed_config: dict) -> None:
         {end_datetime} - {start_datetime} < {delta_time}"""
         raise ValueError(msg)
 
-    # TODO: how to handle this?
-    # Check if the time range is a multiple of delta_time
-    # if (end_datetime - start_datetime) % delta_time != timedelta(0):
-    #     raise ValueError(f"Time range must be a multiple of delta_time.")
-
     # Check if delta_time is positive
     if delta_time <= timedelta(0):
         msg = "delta_time must be positive."
