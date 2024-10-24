@@ -72,6 +72,7 @@ def test_config_parser_basic(base_config):
         "delta_time",
         "variables",
         "levels",
+        "save_name",
     ],
 )
 def test_config_parser_missing_field(base_config, field):
