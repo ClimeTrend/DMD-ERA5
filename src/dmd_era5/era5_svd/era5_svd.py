@@ -63,4 +63,21 @@ def config_parser(config: dict = config) -> dict:
         logger.error(msg)
         raise ValueError(msg) from e
 
+    # parse SVD type
+    parsed_config["svd_type"] = config["svd_type"]
+    if parsed_config["svd_type"] not in ["standard", "randomized"]:
+        msg = f"Invalid SVD type in config: {parsed_config['svd_type']}"
+        logger.error(msg)
+        raise ValueError(msg)
+
+    # parse delay embedding
+    parsed_config["delay_embedding"] = config["delay_embedding"]
+    if (
+        not isinstance(parsed_config["delay_embedding"], int)
+        or parsed_config["delay_embedding"] < 1
+    ):
+        msg = f"Invalid delay embedding in config: {parsed_config['delay_embedding']}"
+        logger.error(msg)
+        raise ValueError(msg)
+
     return parsed_config

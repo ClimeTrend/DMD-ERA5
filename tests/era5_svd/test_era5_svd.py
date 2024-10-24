@@ -52,7 +52,21 @@ def test_config_parser(base_config):
     ],
 )
 def test_config_parser_missing_field(base_config, field):
-    """Test the missing field error."""
+    """Test the missing field error in the configuration."""
     del base_config[field]
     with pytest.raises(ValueError, match=f"Missing required field in config: {field}"):
+        config_parser(base_config)
+
+
+def test_config_parser_invalid_svd_type(base_config):
+    """Test invalid SVD type in the configuration."""
+    base_config["svd_type"] = "invalid"
+    with pytest.raises(ValueError, match="Invalid SVD type in config"):
+        config_parser(base_config)
+
+
+def test_config_parsed_invalid_delay_embedding(base_config):
+    """Test invalid delay embedding in the configuration."""
+    base_config["delay_embedding"] = 0
+    with pytest.raises(ValueError, match="Invalid delay embedding in config"):
         config_parser(base_config)
