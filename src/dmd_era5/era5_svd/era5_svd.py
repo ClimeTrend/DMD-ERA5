@@ -1,5 +1,6 @@
 import logging
 import sys
+from datetime import datetime
 
 from dmd_era5 import config_reader, setup_logger
 
@@ -23,6 +24,10 @@ def config_parser(config: dict = config) -> dict:
     Returns:
         dict: The parsed configuration dictionary.
     """
+
+    parsed_config = {}
+
+    # check for required fields
     required_fields = [
         "file_path",
         "save_name",
@@ -41,4 +46,21 @@ def config_parser(config: dict = config) -> dict:
             logger.error(msg)
             raise ValueError(msg)
 
-    return {}
+    # parse datetime fields
+    try:
+        parsed_config["start_datetime"] = datetime.fromisoformat(
+            config["start_datetime"]
+        )
+    except ValueError as e:
+        msg = f"Invalid start datetime format in config: {e}"
+        logger.error(msg)
+        raise ValueError(msg) from e
+
+    try:
+        parsed_config["end_datetime"] = datetime.fromisoformat(config["end_datetime"])
+    except ValueError as e:
+        msg = f"Invalid end datetime format in config: {e}"
+        logger.error(msg)
+        raise ValueError(msg) from e
+
+    return parsed_config
