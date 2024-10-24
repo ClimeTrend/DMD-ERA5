@@ -23,4 +23,22 @@ def config_parser(config: dict = config) -> dict:
     Returns:
         dict: The parsed configuration dictionary.
     """
+    required_fields = [
+        "file_path",
+        "save_name",
+        "variables",
+        "levels",
+        "svd_type",
+        "delay_embedding",
+        "standardize",
+        "start_datetime",
+        "end_datetime",
+    ]
+
+    for field in required_fields:
+        if field not in config:
+            msg = f"Missing required field in config: {field}"
+            logger.error(msg)
+            raise ValueError(msg)
+
     return {}
