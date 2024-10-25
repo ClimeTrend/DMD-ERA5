@@ -7,6 +7,7 @@ from datetime import datetime
 import pytest
 
 from dmd_era5.era5_svd import config_parser
+from dmd_era5.era5_download import create_mock_era5
 
 
 @pytest.fixture
@@ -65,8 +66,20 @@ def test_config_parser_invalid_svd_type(base_config):
         config_parser(base_config)
 
 
-def test_config_parsed_invalid_delay_embedding(base_config):
+def test_config_parser_invalid_delay_embedding(base_config):
     """Test invalid delay embedding in the configuration."""
     base_config["delay_embedding"] = 0
     with pytest.raises(ValueError, match="Invalid delay embedding in config"):
         config_parser(base_config)
+
+
+@pytest.mark.skip("work in progress")
+def test_config_parser_invalid_start_datetime(base_config):
+    """Test that a requested start datetime is invalid when it is out of range."""
+    mock_era5 = create_mock_era5(
+        "2020-01-01T00",
+        "2020-01-05T00",
+        variables=["temperature"],
+        levels=[1000],
+    )
+    pass
