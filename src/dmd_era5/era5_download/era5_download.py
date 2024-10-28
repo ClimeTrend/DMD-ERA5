@@ -9,6 +9,7 @@ from pyprojroot import here
 
 from dmd_era5 import config_reader, log_and_print, setup_logger
 from dmd_era5.era5_download.create_mock_era5 import create_mock_era5
+from dmd_era5.utils import slice_era5_dataset, thin_era5_dataset
 
 config = config_reader("era5-download")
 logger = setup_logger("ERA5Download", "era5_download.log")
@@ -173,40 +174,6 @@ def config_parser(config: dict = config) -> dict:
         parsed_config["save_name"] = config["save_name"]
 
     return parsed_config
-
-
-def slice_era5_dataset(
-    ds: xr.Dataset, start_datetime: str, end_datetime: str, levels: list
-) -> xr.Dataset:
-    """
-    Slice the ERA5 dataset based on time range and pressure levels.
-
-    Args:
-        ds (xr.Dataset): The input ERA5 dataset.
-        start_datetime (str): The start datetime for slicing, e.g. '2020-01-01T00'.
-        end_datetime (str): The end datetime for slicing, e.g. '2020-01-02T23'.
-        levels (list): The pressure levels to select.
-
-    Returns:
-        xr.Dataset: The sliced ERA5 dataset.
-    """
-    return ds.sel(time=slice(start_datetime, end_datetime), level=levels)
-
-
-def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
-    """
-    Thin the ERA5 dataset along the time dimension based
-    on the specified time delta.
-
-    Args:
-        ds (xr.Dataset): The input ERA5 dataset.
-        delta_time (timedelta): The time delta for thinning.
-
-    Returns:
-        xr.Dataset: The thinned ERA5 dataset.
-    """
-
-    return ds.resample(time=delta_time).nearest()
 
 
 def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
