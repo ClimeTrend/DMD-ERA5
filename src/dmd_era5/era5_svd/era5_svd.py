@@ -1,9 +1,10 @@
 import logging
 import sys
 from datetime import datetime
+
 import xarray as xr
 
-from dmd_era5 import config_reader, log_and_print, setup_logger
+from dmd_era5 import config_reader, log_and_print, setup_logger, slice_era5_dataset
 
 config = config_reader("era5-svd")
 logger = setup_logger("ERA5-SVD", "era5_svd.log")
@@ -84,7 +85,7 @@ def config_parser(config: dict = config) -> dict:
     return parsed_config
 
 
-def svd_on_era5(parsed_config: dict, mock_era5: xr.Dataset = None):
+def svd_on_era5(parsed_config: dict, mock_era5: xr.Dataset | None = None):
     """
     Perform Singular Value Decomposition (SVD) on the ERA5 data.
 
@@ -106,4 +107,7 @@ def svd_on_era5(parsed_config: dict, mock_era5: xr.Dataset = None):
     else:
         era5_data = mock_era5
 
+    era5_data = slice_era5_dataset(
+        era5_data, parsed_config["start_datetime"], parsed_config["end_datetime"]
+    )
     pass
