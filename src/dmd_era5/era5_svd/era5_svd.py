@@ -99,15 +99,23 @@ def svd_on_era5(parsed_config: dict, mock_era5: xr.Dataset | None = None):
 
     if mock_era5 is None:
         try:
+            log_and_print(
+                logger, f"Opening ERA5 file: {parsed_config['file_path']} ..."
+            )
             era5_data = xr.open_dataset(parsed_config["file_path"])
         except Exception as e:
             msg = f"Error opening requested ERA5 file: {e}"
-            logger.error(msg)
+            log_and_print(logger, msg, level="error")
             raise ValueError(msg) from e
     else:
         era5_data = mock_era5
 
-    era5_data = slice_era5_dataset(
-        era5_data, parsed_config["start_datetime"], parsed_config["end_datetime"]
-    )
-    pass
+    try:
+        log_and_print(logger, "Slicing ERA5 data...")
+        era5_data = slice_era5_dataset(
+            era5_data, parsed_config["start_datetime"], parsed_config["end_datetime"]
+        )
+    except Exception as e:
+        msg = f"Error slicing ERA5 data: {e}"
+        log_and_print(logger, msg, level="error")
+        raise Exception(msg) from e

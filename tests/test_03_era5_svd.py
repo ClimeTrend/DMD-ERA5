@@ -6,7 +6,8 @@ from datetime import datetime
 
 import pytest
 
-from dmd_era5.era5_svd import config_parser
+from dmd_era5.era5_svd import config_parser, svd_on_era5
+from dmd_era5.utils import create_mock_era5
 
 
 @pytest.fixture
@@ -70,3 +71,14 @@ def test_config_parser_invalid_delay_embedding(base_config):
     base_config["delay_embedding"] = 0
     with pytest.raises(ValueError, match="Invalid delay embedding in config"):
         config_parser(base_config)
+
+
+def test_svd_on_era5(base_config):
+    mock_era5 = create_mock_era5(
+        start_datetime="2019-01-01",
+        end_datetime="2020-02-01",
+        variables=["temperature"],
+        levels=[1000],
+    )
+    parsed_config = config_parser(base_config)
+    svd_on_era5(parsed_config, mock_era5)
