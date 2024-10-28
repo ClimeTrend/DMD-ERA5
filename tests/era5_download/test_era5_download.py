@@ -9,10 +9,9 @@ import xarray as xr
 
 from dmd_era5.era5_download import (
     config_parser,
-    create_mock_era5,
     download_era5_data,
 )
-from dmd_era5.utils import slice_era5_dataset, thin_era5_dataset
+from dmd_era5.utils import create_mock_era5, slice_era5_dataset, thin_era5_dataset
 
 
 @pytest.fixture
