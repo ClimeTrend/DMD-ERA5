@@ -6,8 +6,8 @@ from datetime import datetime
 
 import pytest
 
+from dmd_era5 import create_mock_era5
 from dmd_era5.era5_svd import config_parser
-from dmd_era5.era5_download import create_mock_era5
 
 
 @pytest.fixture
