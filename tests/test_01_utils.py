@@ -4,6 +4,7 @@ Tests for the utils module.
 
 from datetime import datetime, timedelta
 
+import pytest
 import xarray as xr
 
 from dmd_era5.utils import create_mock_era5, slice_era5_dataset, thin_era5_dataset
@@ -47,6 +48,23 @@ def test_slice_era5_dataset():
         datetime
     ) == datetime(2019, 1, 4, 23)
     assert list(sliced_ds.level.values) == [1000, 500]
+
+
+def test_slice_era5_dataset_invalid_time():
+    """Test the invalid time range error in the slice_era5_dataset function."""
+    mock_ds = create_mock_era5(
+        start_datetime="2019-01-01T00:00",
+        end_datetime="2019-01-05T00:00",
+        variables=["temperature"],
+        levels=[1000, 850, 500],
+    )
+
+    with pytest.raises(ValueError, match="Requested time is out of range"):
+        slice_era5_dataset(
+            mock_ds,
+            start_datetime="2018-12-31T00:00",
+            end_datetime="2019-01-05T00:00",
+        )
 
 
 def test_thin_era5_dataset():

@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -7,8 +7,8 @@ import xarray as xr
 
 def slice_era5_dataset(
     ds: xr.Dataset,
-    start_datetime: str | None = None,
-    end_datetime: str | None = None,
+    start_datetime: datetime | str | None = None,
+    end_datetime: datetime | str | None = None,
     levels: list | None = None,
 ) -> xr.Dataset:
     """
@@ -16,23 +16,39 @@ def slice_era5_dataset(
 
     Args:
         ds (xr.Dataset): The input ERA5 dataset.
-        start_datetime (str): The start datetime for slicing, e.g. '2020-01-01T00'.
-            If None, the first datetime in the dataset is used.
-        end_datetime (str): The end datetime for slicing, e.g. '2020-01-02T23'.
-            If None, the last datetime in the dataset is used.
+        start_datetime (datetime.datetime or str): The start datetime for slicing.
+            If None, the first datetime in the dataset is used. If a string, must be
+            in isoformat (e.g. "2020-01-01T06").
+        end_datetime (datetime.datetime or str): The end datetime for slicing.
+            If None, the last datetime in the dataset is used. If a string, must be
+            in isoformat (e.g. "2020-01-05").
         levels (list): The pressure levels to select.
             If None, all levels are selected.
 
     Returns:
         xr.Dataset: The sliced ERA5 dataset.
     """
+    if isinstance(start_datetime, str):
+        start_datetime = datetime.fromisoformat(start_datetime)
+    if isinstance(end_datetime, str):
+        end_datetime = datetime.fromisoformat(end_datetime)
+    first_datetime = datetime.fromtimestamp(ds.time.values[0].astype(int) * 1e-9)
+    last_datetime = datetime.fromtimestamp(ds.time.values[-1].astype(int) * 1e-9)
     if start_datetime is None:
-        start_datetime = ds.time.values[0]
+        start_datetime = first_datetime
     if end_datetime is None:
-        end_datetime = ds.time.values[-1]
+        end_datetime = last_datetime
     if levels is None:
         levels = ds.level.values
-    return ds.sel(time=slice(start_datetime, end_datetime), level=levels)
+
+    if start_datetime < first_datetime or end_datetime > last_datetime:
+        msg = "Requested time is out of range."
+        raise ValueError(msg)
+    try:
+        return ds.sel(time=slice(start_datetime, end_datetime), level=levels)
+    except KeyError as e:
+        msg = "Requested level is not available in the dataset."
+        raise ValueError(msg) from e
 
 
 def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
