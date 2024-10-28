@@ -6,7 +6,10 @@ import xarray as xr
 
 
 def slice_era5_dataset(
-    ds: xr.Dataset, start_datetime: str, end_datetime: str, levels: list
+    ds: xr.Dataset,
+    start_datetime: str | None = None,
+    end_datetime: str | None = None,
+    levels: list | None = None,
 ) -> xr.Dataset:
     """
     Slice the ERA5 dataset based on time range and pressure levels.
@@ -14,12 +17,21 @@ def slice_era5_dataset(
     Args:
         ds (xr.Dataset): The input ERA5 dataset.
         start_datetime (str): The start datetime for slicing, e.g. '2020-01-01T00'.
+            If None, the first datetime in the dataset is used.
         end_datetime (str): The end datetime for slicing, e.g. '2020-01-02T23'.
+            If None, the last datetime in the dataset is used.
         levels (list): The pressure levels to select.
+            If None, all levels are selected.
 
     Returns:
         xr.Dataset: The sliced ERA5 dataset.
     """
+    if start_datetime is None:
+        start_datetime = ds.time.values[0]
+    if end_datetime is None:
+        end_datetime = ds.time.values[-1]
+    if levels is None:
+        levels = ds.level.values
     return ds.sel(time=slice(start_datetime, end_datetime), level=levels)
 
 
