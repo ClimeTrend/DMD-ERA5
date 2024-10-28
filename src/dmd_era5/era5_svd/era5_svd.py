@@ -1,8 +1,9 @@
 import logging
 import sys
 from datetime import datetime
+import xarray as xr
 
-from dmd_era5 import config_reader, setup_logger
+from dmd_era5 import config_reader, log_and_print, setup_logger
 
 config = config_reader("era5-svd")
 logger = setup_logger("ERA5-SVD", "era5_svd.log")
@@ -81,3 +82,28 @@ def config_parser(config: dict = config) -> dict:
         raise ValueError(msg)
 
     return parsed_config
+
+
+def svd_on_era5(parsed_config: dict, mock_era5: xr.Dataset = None):
+    """
+    Perform Singular Value Decomposition (SVD) on the ERA5 data.
+
+    Args:
+        parsed_config (dict): Parsed configuration dictionary with
+            the configuration parameters.
+        mock_era5 (xarray.Dataset): Mock ERA5 data for testing purposes.
+
+    Returns:
+    """
+
+    if mock_era5 is None:
+        try:
+            era5_data = xr.open_dataset(parsed_config["file_path"])
+        except Exception as e:
+            msg = f"Error opening requested ERA5 file: {e}"
+            logger.error(msg)
+            raise ValueError(msg) from e
+    else:
+        era5_data = mock_era5
+
+    pass
