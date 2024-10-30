@@ -37,7 +37,8 @@ def config_parser(config: dict = config) -> dict:
         "levels",
         "svd_type",
         "delay_embedding",
-        "standardize",
+        "mean_center",
+        "scale",
         "start_datetime",
         "end_datetime",
     ]
