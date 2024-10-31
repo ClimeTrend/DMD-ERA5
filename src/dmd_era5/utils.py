@@ -137,3 +137,30 @@ def create_mock_era5(start_datetime, end_datetime, variables, levels):
             "source": "Generated mock data",
         },
     )
+
+
+def standardize_data(
+    data: xr.DataArray,
+    dim: str = "time",
+    mean_center: bool = True,
+    scale: bool = True,
+) -> xr.DataArray:
+    """
+    Standardize the input DataArray by applying mean centering and scaling
+    along the specified dimension.
+
+    Args:
+        data (xr.DataArray): The input data to standardize.
+        dim (str): The dimension along which to standardize. Default is "time".
+        mean_center (bool): Whether to mean center the data. Default is True.
+        scale (bool): Whether to scale the data. Default is True.
+
+    Returns:
+        xr.DataArray: The standardized data.
+    """
+
+    if mean_center:
+        data -= data.mean(dim=dim)
+    if scale:
+        data /= data.std(dim=dim)
+    return data
