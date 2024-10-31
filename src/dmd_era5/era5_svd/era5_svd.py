@@ -1,8 +1,10 @@
 import logging
+import os
 import sys
 from datetime import datetime
 
 import xarray as xr
+from pyprojroot import here
 
 from dmd_era5 import config_reader, log_and_print, setup_logger, slice_era5_dataset
 
@@ -43,6 +45,7 @@ def config_parser(config: dict = config) -> dict:
         "end_datetime",
     ]
 
+    # check for required fields
     for field in required_fields:
         if field not in config:
             msg = f"Missing required field in config: {field}"
@@ -80,6 +83,14 @@ def config_parser(config: dict = config) -> dict:
         or parsed_config["delay_embedding"] < 1
     ):
         msg = f"Invalid delay embedding in config: {parsed_config['delay_embedding']}"
+        logger.error(msg)
+        raise ValueError(msg)
+
+    # parse file path
+    if os.path.exists(os.path.join(here(), config["file_path"])):
+        parsed_config["file_path"] = os.path.join(here(), config["file_path"])
+    else:
+        msg = f"Invalid file path in config: {config['file_path']}"
         logger.error(msg)
         raise ValueError(msg)
 
