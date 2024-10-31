@@ -4,10 +4,16 @@ Tests for the utils module.
 
 from datetime import datetime, timedelta
 
+import numpy as np
 import pytest
 import xarray as xr
 
-from dmd_era5.utils import create_mock_era5, slice_era5_dataset, thin_era5_dataset
+from dmd_era5.utils import (
+    create_mock_era5,
+    slice_era5_dataset,
+    standardize_data,
+    thin_era5_dataset,
+)
 
 
 def test_create_mock_era5():
@@ -85,3 +91,16 @@ def test_thin_era5_dataset():
         thinned_ds.time.diff("time").astype("timedelta64[ns]").astype(int)
         == 6 * 3600 * 1e9
     ).all()
+
+
+def test_standardize_data():
+    """Test the standardize_data function."""
+    mock_era5 = create_mock_era5(
+        start_datetime="2019-01-01",
+        end_datetime="2019-01-10",
+        variables=["temperature"],
+        levels=[1000],
+    )
+    temperature_standardized = standardize_data(mock_era5["temperature"])
+    assert np.allclose(temperature_standardized.values.mean(), 0)
+    assert np.allclose(temperature_standardized.values.std(), 1)
