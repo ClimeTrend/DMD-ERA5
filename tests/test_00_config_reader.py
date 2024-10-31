@@ -14,7 +14,7 @@ from dmd_era5.config_reader import config_reader
 @pytest.fixture
 def test_config_path():
     """Fixture for the test config path."""
-    return os.path.join(here(), "tests/config_reader/config.ini")
+    return os.path.join(here(), "tests/config.ini")
 
 
 @pytest.fixture
