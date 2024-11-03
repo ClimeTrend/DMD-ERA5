@@ -31,7 +31,9 @@ dependencies = ["xarray",
     "zarr",
     "fsspec",
     "gcsfs",
-    "pyprojroot"]
+    "pyprojroot",
+    "dvc",
+    ]
 
 [project.optional-dependencies]
 dev = [
