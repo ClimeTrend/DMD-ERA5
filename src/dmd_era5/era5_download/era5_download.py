@@ -84,7 +84,6 @@ def config_parser(config: dict = config) -> dict:
         "delta_time",
         "variables",
         "levels",
-        "save_name",
     ]
 
     for field in required_fields:
@@ -166,17 +165,18 @@ def config_parser(config: dict = config) -> dict:
         logger.error(msg)
         raise ValueError(msg) from e
 
-    # ------------ Generate save_name if not provided ------------
-    if not config.get("save_name"):
-        # If left empty, the file will be saved with the following format:
-        # - "{start_datetime}_{end_datetime}_{delta_time}.nc"
+    # ------------ Generate  the save path ------------
+    # The file will be saved with the following name format:
+    # - "{start_datetime}_{end_datetime}_{delta_time}.nc"
+    # in the `data/era5_download` directory
 
-        start_str = parsed_config["start_datetime"].strftime("%Y-%m-%dT%H")
-        end_str = parsed_config["end_datetime"].strftime("%Y-%m-%dT%H")
-        delta_str = config["delta_time"]
-        parsed_config["save_name"] = f"{start_str}_{end_str}_{delta_str}.nc"
-    else:
-        parsed_config["save_name"] = config["save_name"]
+    start_str = parsed_config["start_datetime"].strftime("%Y-%m-%dT%H")
+    end_str = parsed_config["end_datetime"].strftime("%Y-%m-%dT%H")
+    delta_str = config["delta_time"]
+    parsed_config["save_name"] = f"{start_str}_{end_str}_{delta_str}.nc"
+    parsed_config["save_path"] = os.path.join(
+        here(), "data/era5_download", parsed_config["save_name"]
+    )
 
     return parsed_config
 
@@ -260,14 +260,13 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
 
         # Save the dataset as NetCDF
         if not use_mock_data:
-            output_path = os.path.join(
-                here(), "data/era5_download", parsed_config["save_name"]
-            )
             log_and_print(
                 logger, f"Size of ERA5 Dataset: {np.round(era5_ds.nbytes / 1e6)} MB"
             )
-            log_and_print(logger, f"Saving ERA5 Dataset to {output_path}...")
-            era5_ds.to_netcdf(output_path, format="NETCDF4")
+            log_and_print(
+                logger, f"Saving ERA5 Dataset to {parsed_config["save_path"]}..."
+            )
+            era5_ds.to_netcdf(parsed_config["save_path"], format="NETCDF4")
             log_and_print(logger, "ERA5 Dataset saved.")
 
         return era5_ds

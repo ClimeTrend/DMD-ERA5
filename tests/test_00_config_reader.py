@@ -116,7 +116,6 @@ def test_actual_config_era5_download_section(actual_config_reader):
     assert "delta_time" in config, "era5-download section should have a delta_time"
     assert "variables" in config, "era5-download section should have variables"
     assert "levels" in config, "era5-download section should have levels"
-    assert "save_name" in config, "era5-download section should have save_name"
 
 
 def test_actual_config_type(actual_config_reader):
