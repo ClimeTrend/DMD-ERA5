@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import xarray as xr
+from dvc.repo import Repo
 from pyprojroot import here
 
 from dmd_era5 import (
@@ -279,7 +280,7 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         raise ValueError(msg) from e
 
 
-def main(use_mock_data: bool = False) -> None:
+def main(use_mock_data: bool = False, add_to_dvc: bool = False) -> None:
     """Main function to run the ERA5 download process."""
     try:
         parsed_config = config_parser()
@@ -290,6 +291,34 @@ def main(use_mock_data: bool = False) -> None:
     except Exception as e:
         log_and_print(logger, f"ERA5 download process failed: {e}", level="error")
 
+    if add_to_dvc:
+        try:
+            log_and_print(logger, "Adding data to DVC...")
+            with Repo(here()) as repo:
+                repo.add(parsed_config["save_path"])
+            log_and_print(logger, "Data added to DVC.")
+        except Exception as e:
+            log_and_print(logger, f"Error adding data to DVC: {e}", level="error")
+
 
 if __name__ == "__main__":
-    main()
+
+    def check_if_dvc_repo():
+        """Check if the current directory is a DVC repository."""
+        try:
+            with Repo(here()) as _:
+                return True
+        except Exception:
+            return False
+
+    is_dvc_repo = check_if_dvc_repo()
+    if not is_dvc_repo:
+        log_and_print(
+            logger, "Not a DVC repository. Not adding data to DVC.", level="warning"
+        )
+        log_and_print(
+            logger, "To initialize a DVC repository, run `dvc init`.", level="warning"
+        )
+        main()
+    else:
+        main(add_to_dvc=True)
