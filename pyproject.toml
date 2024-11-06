@@ -113,5 +113,8 @@ flake8-unused-arguments.ignore-variadic-names = true  # allow unused *args/**kwa
 
 [tool.mypy]
 [[tool.mypy.overrides]]
-module = "pyprojroot"
+module = [
+  "pyprojroot",
+  "dvc",
+]
 ignore_missing_imports = true
