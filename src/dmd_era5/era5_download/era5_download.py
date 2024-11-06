@@ -5,7 +5,9 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import xarray as xr
-from dvc.repo import Repo
+import yaml
+from dvc.repo import Repo as DvcRepo
+from git import Repo as GitRepo
 from pyprojroot import here
 
 from dmd_era5 import (
@@ -203,6 +205,51 @@ def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
     return ds
 
 
+def add_config_to_dvc_log(
+    dvc_file_path: str, parsed_config: dict, git_add=False
+) -> None:
+    """
+    Add the configuration settings as metadata to a custom log file.
+    Each entry in the log file stores metadata for a single download
+    under a unique DVC md5 hash.
+
+    Args:
+        dvc_file_path (str): The path to the DVC file.
+        parsed_config (dict): The parsed configuration dictionary.
+        git_add (bool): Whether to stage the log file for commit.
+    """
+
+    # get the md5 hash of the dvc file
+    with open(dvc_file_path) as f:
+        dvc_file_content = yaml.safe_load(f)
+    md5_hash = dvc_file_content["outs"][0]["md5"]
+
+    log_file = os.path.join(here(), "data/era5_download/dvc_log.yaml")
+
+    # Create the log file if it does not exist
+    if not os.path.exists(log_file):
+        with open(log_file, "w") as f:
+            f.write("")
+
+    # Add the metadata to the log file
+    with open(log_file, "a") as f:
+        f.write(f"{md5_hash}:\n")
+        f.write(f"  source_path: {parsed_config['source_path']}\n")
+        f.write(f"  start_datetime: {parsed_config['start_datetime'].isoformat()}\n")
+        f.write(f"  end_datetime: {parsed_config['end_datetime'].isoformat()}\n")
+        f.write(
+            f"  hours_delta_time: {parsed_config['delta_time'].total_seconds()/3600}\n"
+        )
+        f.write(f"  variables: {parsed_config['variables']}\n")
+        f.write(f"  levels: {parsed_config['levels']}\n")
+        f.write(f"  date_downloaded: {datetime.now().isoformat()}\n")
+
+    # Stage the log file for commit
+    if git_add:
+        with GitRepo(here()) as repo:
+            repo.index.add([log_file])
+
+
 def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.Dataset:
     """
     Download ERA5 data from the specified source path and return an xarray Dataset.
@@ -294,8 +341,10 @@ def main(use_mock_data: bool = False, add_to_dvc: bool = False) -> None:
     if add_to_dvc:
         try:
             log_and_print(logger, "Adding data to DVC...")
-            with Repo(here()) as repo:
+            with DvcRepo(here()) as repo:
                 repo.add(parsed_config["save_path"])
+            dvc_file_path = os.path.join(parsed_config["save_path"] + ".dvc")
+            add_config_to_dvc_log(dvc_file_path, parsed_config, git_add=True)
             log_and_print(logger, "Data added to DVC.")
         except Exception as e:
             log_and_print(logger, f"Error adding data to DVC: {e}", level="error")
@@ -306,7 +355,7 @@ if __name__ == "__main__":
     def check_if_dvc_repo():
         """Check if the current directory is a DVC repository."""
         try:
-            with Repo(here()) as _:
+            with DvcRepo(here()) as _:
                 return True
         except Exception:
             return False

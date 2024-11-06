@@ -42,3 +42,4 @@ repos:
           - xarray
           - pandas-stubs
           - dvc
+          - types-PyYAML

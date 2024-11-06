@@ -33,6 +33,7 @@ dependencies = ["xarray",
     "gcsfs",
     "pyprojroot",
     "dvc",
+    "GitPython",
     ]
 
 [project.optional-dependencies]
@@ -115,6 +116,6 @@ flake8-unused-arguments.ignore-variadic-names = true  # allow unused *args/**kwa
 [[tool.mypy.overrides]]
 module = [
   "pyprojroot",
-  "dvc",
+  "dvc.*",
 ]
 ignore_missing_imports = true
