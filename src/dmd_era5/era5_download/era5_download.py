@@ -224,7 +224,8 @@ def add_config_to_dvc_log(
         dvc_file_content = yaml.safe_load(f)
     md5_hash = dvc_file_content["outs"][0]["md5"]
 
-    log_file = os.path.join(here(), "data/era5_download/dvc_log.yaml")
+    log_file = parsed_config["save_name"].split(".")[0]
+    log_file = os.path.join(here(), "data/era5_download", f"{log_file}.yaml")
 
     # Create the log file if it does not exist
     if not os.path.exists(log_file):
