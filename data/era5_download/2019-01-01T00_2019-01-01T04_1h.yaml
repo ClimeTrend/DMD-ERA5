@@ -14,3 +14,11 @@
   variables: ['u_component_of_wind']
   levels: [10]
   date_downloaded: 2024-11-06T17:29:43.395375
+e20d089b9be83af3492796fa46f90f9d:
+  source_path: gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2
+  start_datetime: 2019-01-01T00:00:00
+  end_datetime: 2019-01-01T04:00:00
+  hours_delta_time: 1.0
+  variables: ['v_component_of_wind']
+  levels: [10]
+  date_downloaded: 2024-11-07T14:17:12.406039
