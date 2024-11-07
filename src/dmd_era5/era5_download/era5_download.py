@@ -313,7 +313,7 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
                 logger, f"Size of ERA5 Dataset: {np.round(era5_ds.nbytes / 1e6)} MB"
             )
             log_and_print(
-                logger, f"Saving ERA5 Dataset to {parsed_config["save_path"]}..."
+                logger, f"Saving ERA5 Dataset to {parsed_config['save_path']}..."
             )
             era5_ds.to_netcdf(parsed_config["save_path"], format="NETCDF4")
             log_and_print(logger, "ERA5 Dataset saved.")
