@@ -258,6 +258,7 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
     Args:
         parsed_config (dict): Parsed configuration dictionary with the
         configuration parameters.
+        use_mock_data (bool): Whether to use mock data instead of downloading.
 
     Returns:
         xr.Dataset: An xarray Dataset containing the downloaded ERA5 data.
@@ -329,7 +330,14 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
 
 
 def main(use_mock_data: bool = False, add_to_dvc: bool = False) -> None:
-    """Main function to run the ERA5 download process."""
+    """
+    Main function to run the ERA5 download process.
+
+    Args:
+        config (dict): Configuration dictionary with the configuration parameters.
+        use_mock_data (bool): Whether to use mock data instead of downloading.
+        add_to_dvc (bool): Whether to add the ERA5 data to DVC.
+    """
     try:
         parsed_config = config_parser()
         download_era5_data(parsed_config, use_mock_data)
