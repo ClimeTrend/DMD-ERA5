@@ -8,9 +8,11 @@ import pytest
 import xarray as xr
 
 from dmd_era5.era5_download import (
+    add_data_to_dvc,
     config_parser,
     download_era5_data,
 )
+from dmd_era5.utils import create_mock_era5
 
 
 @pytest.fixture
@@ -211,3 +213,28 @@ def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
         era5_data.time.diff("time").astype("timedelta64[ns]").astype(int)
         == 6 * 3600 * 1e9
     ).all()
+
+
+@pytest.mark.docker
+def test_add_era5_to_dvc(base_config):
+    """
+    Test that ERA5 slices can be added to and tracked by
+    Data Version Control (DVC).
+    """
+
+    base_config["start_datetime"] = "2019-01-01T00"
+    base_config["end_datetime"] = "2019-01-01T04"
+    base_config["delta_time"] = "1h"
+    base_config["variables"] = "temperature"
+    base_config["levels"] = "1000"
+
+    parsed_config = config_parser(base_config)
+
+    era5_ds = create_mock_era5(
+        start_datetime=parsed_config["start_datetime"],
+        end_datetime=parsed_config["end_datetime"],
+        variables=parsed_config["variables"],
+        levels=parsed_config["levels"],
+    )
+    era5_ds.to_netcdf(parsed_config["save_path"], format="NETCDF4")
+    add_data_to_dvc(parsed_config)
