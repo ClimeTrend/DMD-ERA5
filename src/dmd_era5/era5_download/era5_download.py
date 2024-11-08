@@ -329,6 +329,25 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         raise ValueError(msg) from e
 
 
+def add_data_to_dvc(parsed_config: dict) -> None:
+    """
+    Add the downloaded ERA5 data to DVC.
+
+    Args:
+        parsed_config (dict): Parsed configuration dictionary with the
+        configuration parameters.
+    """
+    try:
+        log_and_print(logger, "Adding data to DVC...")
+        with DvcRepo(here()) as repo:
+            repo.add(parsed_config["save_path"])
+        dvc_file_path = os.path.join(parsed_config["save_path"] + ".dvc")
+        add_config_to_dvc_log(dvc_file_path, parsed_config, git_add=True)
+        log_and_print(logger, "Data added to DVC.")
+    except Exception as e:
+        log_and_print(logger, f"Error adding data to DVC: {e}", level="error")
+
+
 def main(use_mock_data: bool = False, add_to_dvc: bool = False) -> None:
     """
     Main function to run the ERA5 download process.
@@ -348,15 +367,7 @@ def main(use_mock_data: bool = False, add_to_dvc: bool = False) -> None:
         log_and_print(logger, f"ERA5 download process failed: {e}", level="error")
 
     if add_to_dvc:
-        try:
-            log_and_print(logger, "Adding data to DVC...")
-            with DvcRepo(here()) as repo:
-                repo.add(parsed_config["save_path"])
-            dvc_file_path = os.path.join(parsed_config["save_path"] + ".dvc")
-            add_config_to_dvc_log(dvc_file_path, parsed_config, git_add=True)
-            log_and_print(logger, "Data added to DVC.")
-        except Exception as e:
-            log_and_print(logger, f"Error adding data to DVC: {e}", level="error")
+        add_data_to_dvc(parsed_config)
 
 
 if __name__ == "__main__":
