@@ -1,0 +1,2 @@
+# ignore all files and folders starting with . (e.g. .git, .dvc)
+.*
