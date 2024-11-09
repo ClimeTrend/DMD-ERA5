@@ -10,6 +10,7 @@ from git import Repo as GitRepo
 from pyprojroot import here
 
 from dmd_era5.era5_download import (
+    add_config_attributes,
     add_data_to_dvc,
     config_parser,
     download_era5_data,
@@ -257,7 +258,8 @@ def test_add_era5_to_dvc(base_config, config):
         variables=parsed_config["variables"],
         levels=parsed_config["levels"],
     )
+    era5_ds = add_config_attributes(era5_ds, parsed_config)
     era5_ds.to_netcdf(parsed_config["save_path"], format="NETCDF4")
-    add_data_to_dvc(parsed_config)
+    add_data_to_dvc(parsed_config["save_path"], era5_ds.attrs)
     with GitRepo(here()) as repo:
         repo.index.commit("Add ERA5 data to DVC")

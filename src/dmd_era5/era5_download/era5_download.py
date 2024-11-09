@@ -206,7 +206,7 @@ def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
 
 
 def add_config_to_dvc_log(
-    dvc_file_path: str, parsed_config: dict, git_add=False
+    dvc_file_path: str, data_path, data_attrs: dict, git_add=False
 ) -> None:
     """
     Add the configuration settings as metadata to a custom log file.
@@ -215,7 +215,8 @@ def add_config_to_dvc_log(
 
     Args:
         dvc_file_path (str): The path to the DVC file.
-        parsed_config (dict): The parsed configuration dictionary.
+        data_path (str): The path to the data file.
+        data_attrs (dict): The attributes of the data file.
         git_add (bool): Whether to stage the log file for commit.
     """
 
@@ -224,8 +225,7 @@ def add_config_to_dvc_log(
         dvc_file_content = yaml.safe_load(f)
     md5_hash = dvc_file_content["outs"][0]["md5"]
 
-    log_file = parsed_config["save_name"].split(".")[0]
-    log_file = os.path.join(here(), "data/era5_download", f"{log_file}.yaml")
+    log_file = data_path + ".yaml"
 
     # Create the log file if it does not exist
     if not os.path.exists(log_file):
@@ -235,15 +235,8 @@ def add_config_to_dvc_log(
     # Add the metadata to the log file
     with open(log_file, "a") as f:
         f.write(f"{md5_hash}:\n")
-        f.write(f"  source_path: {parsed_config['source_path']}\n")
-        f.write(f"  start_datetime: {parsed_config['start_datetime'].isoformat()}\n")
-        f.write(f"  end_datetime: {parsed_config['end_datetime'].isoformat()}\n")
-        f.write(
-            f"  hours_delta_time: {parsed_config['delta_time'].total_seconds()/3600}\n"
-        )
-        f.write(f"  variables: {parsed_config['variables']}\n")
-        f.write(f"  levels: {parsed_config['levels']}\n")
-        f.write(f"  date_downloaded: {datetime.now().isoformat()}\n")
+        for key, value in data_attrs.items():
+            f.write(f"  {key}: {value}\n")
 
     # Stage the log file for commit
     if git_add:
@@ -329,20 +322,20 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         raise ValueError(msg) from e
 
 
-def add_data_to_dvc(parsed_config: dict) -> None:
+def add_data_to_dvc(data_path: str, data_attrs: dict) -> None:
     """
-    Add the downloaded ERA5 data to DVC.
+    Add data to Data Version Control (DVC) and log the metadata.
 
     Args:
-        parsed_config (dict): Parsed configuration dictionary with the
-        configuration parameters.
+        data_path (str): The path to the data file.
+        data_attrs (dict): The attributes of the data file.
     """
     try:
         log_and_print(logger, "Adding data to DVC...")
         with DvcRepo(here()) as repo:
-            repo.add(parsed_config["save_path"])
-        dvc_file_path = os.path.join(parsed_config["save_path"] + ".dvc")
-        add_config_to_dvc_log(dvc_file_path, parsed_config, git_add=True)
+            repo.add(data_path)
+        dvc_file_path = os.path.join(data_path + ".dvc")
+        add_config_to_dvc_log(dvc_file_path, data_path, data_attrs, git_add=True)
         log_and_print(logger, "Data added to DVC.")
     except Exception as e:
         log_and_print(logger, f"Error adding data to DVC: {e}", level="error")
@@ -359,7 +352,7 @@ def main(use_mock_data: bool = False, add_to_dvc: bool = False) -> None:
     """
     try:
         parsed_config = config_parser()
-        download_era5_data(parsed_config, use_mock_data)
+        era5_ds = download_era5_data(parsed_config, use_mock_data)
         log_and_print(logger, "ERA5 download process completed successfully.")
     except ValueError as e:
         log_and_print(logger, f"Configuration error: {e}", level="error")
@@ -367,7 +360,7 @@ def main(use_mock_data: bool = False, add_to_dvc: bool = False) -> None:
         log_and_print(logger, f"ERA5 download process failed: {e}", level="error")
 
     if add_to_dvc:
-        add_data_to_dvc(parsed_config)
+        add_data_to_dvc(parsed_config["save_path"], era5_ds.attrs)
 
 
 if __name__ == "__main__":
