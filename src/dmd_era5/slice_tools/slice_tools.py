@@ -1,10 +1,8 @@
-from datetime import datetime, timedelta
-
-import numpy as np
-import pandas as pd
-import xarray as xr
 import logging
 import sys
+from datetime import datetime, timedelta
+
+import xarray as xr
 
 from dmd_era5 import log_and_print, setup_logger
 
@@ -31,10 +29,10 @@ def slice_era5_dataset(
     ds : xr.Dataset
         The input ERA5 dataset to slice.
     start_datetime : datetime or str, optional
-        The start datetime for slicing. If str, must be in isoformat 
+        The start datetime for slicing. If str, must be in isoformat
         (e.g. "2020-01-01T06"). If None, uses first datetime in dataset.
     end_datetime : datetime or str, optional
-        The end datetime for slicing. If str, must be in isoformat 
+        The end datetime for slicing. If str, must be in isoformat
         (e.g. "2020-01-05"). If None, uses last datetime in dataset.
     levels : list of int, optional
         The pressure levels to select. If None, selects all levels.
@@ -50,28 +48,32 @@ def slice_era5_dataset(
         If requested time range is outside dataset bounds or levels not found.
     """
 
-
-
     # Convert string datetimes to datetime objects if needed
-    start_dt = (datetime.fromisoformat(start_datetime)
-        if isinstance(start_datetime, str) else start_datetime)
-    end_dt = (datetime.fromisoformat(end_datetime)
-        if isinstance(end_datetime, str) else end_datetime)
+    start_dt = (
+        datetime.fromisoformat(start_datetime)
+        if isinstance(start_datetime, str)
+        else start_datetime
+    )
+    end_dt = (
+        datetime.fromisoformat(end_datetime)
+        if isinstance(end_datetime, str)
+        else end_datetime
+    )
 
     # Get dataset time bounds
     time_bounds = _get_dataset_time_bounds(ds)
 
     # Use dataset bounds if no times specified
-    start_dt = start_dt or time_bounds['first']
-    end_dt = end_dt or time_bounds['last']
+    start_dt = start_dt or time_bounds["first"]
+    end_dt = end_dt or time_bounds["last"]
 
     # Validate time range is within dataset bounds
-    if start_dt < time_bounds['first'] or end_dt > time_bounds['last']:
-        msg = f"Requested time range ({start_dt} to {end_dt}) is outside dataset "
+    if start_dt < time_bounds["first"] or end_dt > time_bounds["last"]:
+        msg = f"Time range ({start_dt} to {end_dt}) is outside dataset"
         msg += f"bounds ({time_bounds['first']} to {time_bounds['last']})."
         log_and_print(logger, msg, "error")
         raise ValueError(msg)
-    
+
     # Validate the start is before the end datetime
     if start_dt >= end_dt:
         msg = "Start datetime must be before end datetime."
@@ -84,12 +86,17 @@ def slice_era5_dataset(
     # Slice the dataset
     try:
         sliced_ds = ds.sel(time=slice(start_dt, end_dt), level=levels)
-        log_and_print(logger, f"Dataset slicing completed successfully using {start_dt} to {end_dt} and levels {levels}")
+        log_and_print(
+            logger,
+            f"Dataset slicing completed successfully using {start_dt}"
+            f"to {end_dt} and levels {levels}",
+        )
         return sliced_ds
 
     except KeyError as e:
         available_levels = list(ds.level.values)
-        msg = f"Requested level is not available in the dataset. Available levels: {available_levels}"
+        msg = "Requested level is not available in the dataset."
+        msg += f"Available levels: {available_levels}"
         log_and_print(logger, msg, "error")
         raise ValueError(msg) from e
 
@@ -97,21 +104,22 @@ def slice_era5_dataset(
 def _get_dataset_time_bounds(ds: xr.Dataset) -> dict:
     """
     Get the first and last timestamps from an ERA5 dataset.
-    
+
     Parameters
     ----------
     ds : xr.Dataset
         The ERA5 dataset.
-        
+
     Returns
     -------
     dict
         Dictionary with 'first' and 'last' datetime objects.
     """
     return {
-        'first': datetime.fromtimestamp(ds.time.values[0].astype(int) * 1e-9),
-        'last': datetime.fromtimestamp(ds.time.values[-1].astype(int) * 1e-9)
+        "first": datetime.fromtimestamp(ds.time.values[0].astype(int) * 1e-9),
+        "last": datetime.fromtimestamp(ds.time.values[-1].astype(int) * 1e-9),
     }
+
 
 def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
     """
@@ -129,7 +137,6 @@ def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
     thinned_ds = ds.resample(time=delta_time).nearest()
     log_and_print(logger, f"Thinned the dataset with time delta: {delta_time}")
     return thinned_ds
-
 
 
 def standardize_data(
@@ -153,10 +160,12 @@ def standardize_data(
     """
     log_and_print(logger, f"Mean centering: {mean_center}, Scaling: {scale}")
 
-
     if mean_center:
         # Mean center the data
-        log_and_print(logger, f"Applying mean centering with {mean_center} along {dim} dimension...")
+        log_and_print(
+            logger,
+            f"Applying mean centering with {mean_center} along {dim} dimension...",
+        )
         data = data - data.mean(dim=dim)
     if scale:
         # Scale the data by the standard deviation
