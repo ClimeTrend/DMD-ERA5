@@ -46,9 +46,7 @@ def test_slice_era5_dataset_invalid_time():
         levels=[1000, 850, 500],
     )
 
-    with pytest.raises(
-        ValueError, match="Requested time range .* is outside dataset bounds"
-    ):
+    with pytest.raises(ValueError, match="Time range .* is outside dataset"):
         slice_era5_dataset(
             mock_ds,
             start_datetime="2018-12-31T00:00",
