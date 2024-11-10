@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from dmd_era5.era5_processing import slice_era5_dataset, thin_era5_dataset, standardize_data
+from dmd_era5.slice_tools import slice_era5_dataset, thin_era5_dataset, standardize_data
 from dmd_era5.create_mock_data import create_mock_era5
 
 
