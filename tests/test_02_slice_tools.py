@@ -6,11 +6,9 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pytest
-import xarray as xr
 
-from dmd_era5.slice_tools import slice_era5_dataset, thin_era5_dataset, standardize_data
 from dmd_era5.create_mock_data import create_mock_era5
-
+from dmd_era5.slice_tools import slice_era5_dataset, standardize_data, thin_era5_dataset
 
 
 def test_slice_era5_dataset():
@@ -48,7 +46,9 @@ def test_slice_era5_dataset_invalid_time():
         levels=[1000, 850, 500],
     )
 
-    with pytest.raises(ValueError, match="Requested time range .* is outside dataset bounds"):
+    with pytest.raises(
+        ValueError, match="Requested time range .* is outside dataset bounds"
+    ):
         slice_era5_dataset(
             mock_ds,
             start_datetime="2018-12-31T00:00",
@@ -76,8 +76,6 @@ def test_thin_era5_dataset():
     ).all()
 
 
-
-
 def test_standardize_data():
     """Test the standardize_data function."""
     mock_era5 = create_mock_era5(
@@ -90,6 +88,7 @@ def test_standardize_data():
     assert np.allclose(temperature_standardized.values.mean(), 0)
     assert np.allclose(temperature_standardized.values.std(), 1)
 
+
 # TODO: these tests are not working
 
 # def test_standardize_data_no_mean_center():
@@ -101,30 +100,27 @@ def test_standardize_data():
 #         levels=[1000],
 #     )
 #     original_mean = mock_era5["temperature"].mean(dim="time", keepdims=True)
-    
+
 #     # Ensure no NaNs in the mock data
 #     assert not np.isnan(mock_era5["temperature"]).any(), "Mock data contains NaNs"
 
 #     temperature_standardized = standardize_data(
-#         mock_era5["temperature"], 
-#         mean_center=False, 
+#         mock_era5["temperature"],
+#         mean_center=False,
 #         scale=True
 #     )
-    
+
 #     # Print intermediate values for debugging
-#     print("Original Mean:", original_mean.values)
-#     print("Standardized Mean:", temperature_standardized.mean(dim="time", keepdims=True).values)
-#     print("Standardized Std:", temperature_standardized.std(dim="time", keepdims=True).values)
 
 #     # Mean should be unchanged along time dimension
 #     assert np.allclose(
-#         temperature_standardized.mean(dim="time", keepdims=True), 
+#         temperature_standardized.mean(dim="time", keepdims=True),
 #         original_mean,
 #         atol=1e-7  # Adjust tolerance if needed
 #     )
 #     # Std should be 1 along time dimension
 #     assert np.allclose(
-#         temperature_standardized.std(dim="time", keepdims=True), 
+#         temperature_standardized.std(dim="time", keepdims=True),
 #         1.0,
 #         atol=1e-7  # Adjust tolerance if needed
 #     )
@@ -139,18 +135,18 @@ def test_standardize_data():
 #     )
 #     original_std = mock_era5["temperature"].std(dim="time", keepdims=True)
 #     temperature_standardized = standardize_data(
-#         mock_era5["temperature"], 
-#         mean_center=True, 
+#         mock_era5["temperature"],
+#         mean_center=True,
 #         scale=False
 #     )
 #     # Mean should be 0 along time dimension
 #     assert np.allclose(
-#         temperature_standardized.mean(dim="time", keepdims=True), 
+#         temperature_standardized.mean(dim="time", keepdims=True),
 #         0
 #     )
 #     # Std should be unchanged along time dimension
 #     assert np.allclose(
-#         temperature_standardized.std(dim="time", keepdims=True), 
+#         temperature_standardized.std(dim="time", keepdims=True),
 #         original_std
 #     )
 
@@ -163,7 +159,7 @@ def test_standardize_data():
 #         levels=[1000, 850, 500],
 #     )
 #     temperature_standardized = standardize_data(
-#         mock_era5["temperature"], 
+#         mock_era5["temperature"],
 #         dim="level"
 #     )
 #     # Check mean and std along the level dimension
@@ -180,8 +176,8 @@ def test_standardize_data():
 #     )
 #     original_data = mock_era5["temperature"].copy()
 #     temperature_standardized = standardize_data(
-#         mock_era5["temperature"], 
-#         mean_center=False, 
+#         mock_era5["temperature"],
+#         mean_center=False,
 #         scale=False
 #     )
 #     # Data should be unchanged
