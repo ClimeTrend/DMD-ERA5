@@ -129,11 +129,10 @@ def standardize_data(
     Returns:
         xr.DataArray: The standardized data.
     """
-
     if mean_center:
         # Mean center the data
-        data -= data.mean(dim=dim)
+        data = data - data.mean(dim=dim)
     if scale:
         # Scale the data by the standard deviation
-        data /= data.std(dim=dim)
+        data = data / data.std(dim=dim)
     return data
