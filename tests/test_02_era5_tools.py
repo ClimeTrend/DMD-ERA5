@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from dmd_era5.era5_processing import slice_era5_dataset, thin_era5_dataset
+from dmd_era5.era5_processing import slice_era5_dataset, thin_era5_dataset, standardize_data
 from dmd_era5.create_mock_data import create_mock_era5
 
 
@@ -74,3 +74,18 @@ def test_thin_era5_dataset():
         thinned_ds.time.diff("time").astype("timedelta64[ns]").astype(int)
         == 6 * 3600 * 1e9
     ).all()
+
+
+
+
+def test_standardize_data():
+    """Test the standardize_data function."""
+    mock_era5 = create_mock_era5(
+        start_datetime="2019-01-01",
+        end_datetime="2019-01-10",
+        variables=["temperature"],
+        levels=[1000],
+    )
+    temperature_standardized = standardize_data(mock_era5["temperature"])
+    assert np.allclose(temperature_standardized.values.mean(), 0)
+    assert np.allclose(temperature_standardized.values.std(), 1)
