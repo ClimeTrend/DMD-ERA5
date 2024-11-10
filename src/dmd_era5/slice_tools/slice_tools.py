@@ -3,6 +3,18 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import xarray as xr
+import logging
+import sys
+
+from dmd_era5 import log_and_print, setup_logger
+
+# Set up logger
+logger = setup_logger("ERA5Processing", "era5_processing.log")
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
+logger.addHandler(console_handler)
 
 
 def slice_era5_dataset(
@@ -38,6 +50,9 @@ def slice_era5_dataset(
         If requested time range is outside dataset bounds or levels not found.
     """
 
+    log_and_print(logger, "Starting ERA5 dataset slicing...")
+
+
     # Convert string datetimes to datetime objects if needed
     start_dt = (datetime.fromisoformat(start_datetime)
         if isinstance(start_datetime, str) else start_datetime)
@@ -64,13 +79,18 @@ def slice_era5_dataset(
 
     # Use all levels if none specified
     levels = levels or list(ds.level.values)
+    log_and_print(logger, f"Selected levels: {levels}")
 
     # Slice the dataset
     try:
-        return ds.sel(time=slice(start_dt, end_dt), level=levels)
+        sliced_ds = ds.sel(time=slice(start_dt, end_dt), level=levels)
+        log_and_print(logger, "Dataset slicing completed successfully")
+        return sliced_ds
+
     except KeyError as e:
         available_levels = list(ds.level.values)
         msg = f"Requested level is not available in the dataset. Available levels: {available_levels}"
+        log_and_print(logger, msg, "error")
         raise ValueError(msg) from e
 
 
@@ -106,7 +126,10 @@ def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
         xr.Dataset: The thinned ERA5 dataset.
     """
 
-    return ds.resample(time=delta_time).nearest()
+    log_and_print(logger, f"Thinning dataset with time delta: {delta_time}")
+    thinned_ds = ds.resample(time=delta_time).nearest()
+    log_and_print(logger, "Dataset thinning completed successfully")
+    return thinned_ds
 
 
 
@@ -129,10 +152,17 @@ def standardize_data(
     Returns:
         xr.DataArray: The standardized data.
     """
+    log_and_print(logger, f"Standardising data along {dim} dimension")
+    log_and_print(logger, f"Mean centering: {mean_center}, Scaling: {scale}")
+
+
     if mean_center:
         # Mean center the data
+        log_and_print(logger, "Applying mean centering...")
         data = data - data.mean(dim=dim)
     if scale:
         # Scale the data by the standard deviation
+        log_and_print(logger, "Applying scaling...")
         data = data / data.std(dim=dim)
+    log_and_print(logger, "Data standardisation completed successfully")
     return data
