@@ -1,11 +1,10 @@
+import logging
+import sys
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
 import xarray as xr
-from datetime import datetime
-import logging
-import sys
-
 
 from dmd_era5 import log_and_print, setup_logger
 
@@ -20,10 +19,10 @@ logger.addHandler(console_handler)
 
 
 def create_mock_era5(
-        start_datetime: datetime | str,
-        end_datetime: datetime | str,
-        variables: list[str],
-        levels: list[int]
+    start_datetime: datetime | str,
+    end_datetime: datetime | str,
+    variables: list[str],
+    levels: list[int],
 ) -> xr.Dataset:
     """
     Create a mock ERA5-like dataset for testing purposes.
@@ -58,9 +57,7 @@ def create_mock_era5(
     )
     """
     # Create time range
-    times = pd.date_range(start=start_datetime, 
-                          end=end_datetime, 
-                          freq="h")
+    times = pd.date_range(start=start_datetime, end=end_datetime, freq="h")
 
     # Create latitude and longitude ranges (reduced resolution for testing)
     lat_step = 5.0
@@ -129,23 +126,23 @@ def _generate_variable_data(
         4D array of mock data with shape (time, level, lat, lon)
     """
     shape = (len(times), len(levels), len(lats), len(lons))
-    
+
     if var_name == "temperature":
         # Temperature decreases with height and latitude
         data = np.random.rand(*shape) * 30 + 250  # Base temperature
-        
+
         # Add vertical structure
         for i, level in enumerate(levels):
             data[:, i, :, :] -= (1000 - level) / 100
-            
+
         # Add latitudinal structure
         lat_factor = np.cos(np.radians(lats))
         data = data * lat_factor[np.newaxis, np.newaxis, :, np.newaxis]
-        
+
     elif "wind" in var_name:
         # Wind components with realistic magnitudes
         data = np.random.rand(*shape) * 20 - 10
-        
+
     else:
         # Generic random data for other variables
         data = np.random.rand(*shape) * 100
