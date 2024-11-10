@@ -50,7 +50,6 @@ def slice_era5_dataset(
         If requested time range is outside dataset bounds or levels not found.
     """
 
-    log_and_print(logger, "Starting ERA5 dataset slicing...")
 
 
     # Convert string datetimes to datetime objects if needed
@@ -70,21 +69,22 @@ def slice_era5_dataset(
     if start_dt < time_bounds['first'] or end_dt > time_bounds['last']:
         msg = f"Requested time range ({start_dt} to {end_dt}) is outside dataset "
         msg += f"bounds ({time_bounds['first']} to {time_bounds['last']})."
+        log_and_print(logger, msg, "error")
         raise ValueError(msg)
     
     # Validate the start is before the end datetime
     if start_dt >= end_dt:
         msg = "Start datetime must be before end datetime."
+        log_and_print(logger, msg, "error")
         raise ValueError(msg)
 
     # Use all levels if none specified
     levels = levels or list(ds.level.values)
-    log_and_print(logger, f"Selected levels: {levels}")
 
     # Slice the dataset
     try:
         sliced_ds = ds.sel(time=slice(start_dt, end_dt), level=levels)
-        log_and_print(logger, "Dataset slicing completed successfully")
+        log_and_print(logger, f"Dataset slicing completed successfully using {start_dt} to {end_dt} and levels {levels}")
         return sliced_ds
 
     except KeyError as e:
@@ -126,9 +126,8 @@ def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
         xr.Dataset: The thinned ERA5 dataset.
     """
 
-    log_and_print(logger, f"Thinning dataset with time delta: {delta_time}")
     thinned_ds = ds.resample(time=delta_time).nearest()
-    log_and_print(logger, "Dataset thinning completed successfully")
+    log_and_print(logger, f"Thinned the dataset with time delta: {delta_time}")
     return thinned_ds
 
 
@@ -152,17 +151,15 @@ def standardize_data(
     Returns:
         xr.DataArray: The standardized data.
     """
-    log_and_print(logger, f"Standardising data along {dim} dimension")
     log_and_print(logger, f"Mean centering: {mean_center}, Scaling: {scale}")
 
 
     if mean_center:
         # Mean center the data
-        log_and_print(logger, "Applying mean centering...")
+        log_and_print(logger, f"Applying mean centering with {mean_center} along {dim} dimension...")
         data = data - data.mean(dim=dim)
     if scale:
         # Scale the data by the standard deviation
-        log_and_print(logger, "Applying scaling...")
+        log_and_print(logger, f"Applying scaling with {scale} along {dim} dimension...")
         data = data / data.std(dim=dim)
-    log_and_print(logger, "Data standardisation completed successfully")
     return data

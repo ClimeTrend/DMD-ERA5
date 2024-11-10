@@ -3,6 +3,21 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from datetime import datetime
+import logging
+import sys
+
+
+from dmd_era5 import log_and_print, setup_logger
+
+# Set up logger
+logger = setup_logger("MockData", "mock_data.log")
+
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
+logger.addHandler(console_handler)
+
 
 def create_mock_era5(
         start_datetime: datetime | str,
@@ -77,6 +92,8 @@ def create_mock_era5(
                 else "unknown"
             },
         )
+
+    log_and_print(logger, "Mock ERA5 dataset creation completed successfully")
 
     # Create the dataset
     return xr.Dataset(
