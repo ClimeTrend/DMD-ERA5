@@ -74,7 +74,24 @@ def slice_era5_dataset(
         raise ValueError(msg) from e
 
 
-
+def _get_dataset_time_bounds(ds: xr.Dataset) -> dict:
+    """
+    Get the first and last timestamps from an ERA5 dataset.
+    
+    Parameters
+    ----------
+    ds : xr.Dataset
+        The ERA5 dataset.
+        
+    Returns
+    -------
+    dict
+        Dictionary with 'first' and 'last' datetime objects.
+    """
+    return {
+        'first': datetime.fromtimestamp(ds.time.values[0].astype(int) * 1e-9),
+        'last': datetime.fromtimestamp(ds.time.values[-1].astype(int) * 1e-9)
+    }
 
 def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
     """
