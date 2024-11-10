@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from dmd_era5 import log_and_print, setup_logger
+from dmd_era5.logger import log_and_print, setup_logger
 
 # Set up logger
 logger = setup_logger("MockData", "mock_data.log")
