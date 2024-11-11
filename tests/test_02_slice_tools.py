@@ -8,7 +8,11 @@ import numpy as np
 import pytest
 
 from dmd_era5.create_mock_data import create_mock_era5
-from dmd_era5.slice_tools import slice_era5_dataset, standardize_data, thin_era5_dataset
+from dmd_era5.slice_tools import (
+    resample_era5_dataset,
+    slice_era5_dataset,
+    standardize_data,
+)
 
 
 def test_slice_era5_dataset():
@@ -57,8 +61,8 @@ def test_slice_era5_dataset_invalid_time():
         )
 
 
-def test_thin_era5_dataset():
-    """Test that the thin_era5_dataset function correctly thins the dataset."""
+def test_resample_era5_dataset():
+    """Test that the resample_era5_dataset function correctly resamples the dataset."""
     mock_ds = create_mock_era5(
         start_datetime="2019-01-01",
         end_datetime="2019-01-02",
@@ -66,12 +70,12 @@ def test_thin_era5_dataset():
         levels=[1000],
     )
 
-    # Test thinning
-    thinned_ds = thin_era5_dataset(mock_ds, timedelta(hours=6))
+    # Test resampling
+    resampled_ds = resample_era5_dataset(mock_ds, timedelta(hours=6))
 
-    assert len(thinned_ds.time) == 5, "Expected 5 time points"
+    assert len(resampled_ds.time) == 5, "Expected 5 time points"
     assert (
-        thinned_ds.time.diff("time").astype("timedelta64[ns]").astype(int)
+        resampled_ds.time.diff("time").astype("timedelta64[ns]").astype(int)
         == 6 * 3600 * 1e9
     ).all(), "Expected time delta to be 6 hours"
 

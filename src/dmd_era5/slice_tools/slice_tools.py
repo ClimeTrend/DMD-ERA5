@@ -121,22 +121,22 @@ def _get_dataset_time_bounds(ds: xr.Dataset) -> dict:
     }
 
 
-def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
+def resample_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
     """
-    Thin the ERA5 dataset along the time dimension based
-    on the specified time delta.
+    Resample an ERA5 dataset along the time dimension by a
+    specified time delta, using nearest neighbor.
 
     Args:
         ds (xr.Dataset): The input ERA5 dataset.
-        delta_time (timedelta): The time delta for thinning.
+        delta_time (timedelta): The time delta for resampling.
 
     Returns:
-        xr.Dataset: The thinned ERA5 dataset.
+        xr.Dataset: The resampled ERA5 dataset.
     """
 
-    thinned_ds = ds.resample(time=delta_time).nearest()
-    log_and_print(logger, f"Thinned the dataset with time delta: {delta_time}")
-    return thinned_ds
+    resampled_ds = ds.resample(time=delta_time).nearest()
+    log_and_print(logger, f"Resampled the dataset with time delta: {delta_time}")
+    return resampled_ds
 
 
 def standardize_data(

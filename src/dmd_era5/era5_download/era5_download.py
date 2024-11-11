@@ -11,9 +11,9 @@ from dmd_era5 import (
     config_reader,
     create_mock_era5,
     log_and_print,
+    resample_era5_dataset,
     setup_logger,
     slice_era5_dataset,
-    thin_era5_dataset,
 )
 
 config = config_reader("era5-download")
@@ -250,10 +250,10 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
             parsed_config["levels"],
         )
 
-        # Apply time thinning if delta_time is greater than 1 hour
+        # Apply time resampling if delta_time is greater than 1 hour
         if parsed_config["delta_time"] > timedelta(hours=1):
-            log_and_print(logger, "Thinning ERA5 Dataset...")
-            era5_ds = thin_era5_dataset(era5_ds, parsed_config["delta_time"])
+            log_and_print(logger, "Resampling ERA5 Dataset in time...")
+            era5_ds = resample_era5_dataset(era5_ds, parsed_config["delta_time"])
 
         # Add config settings as attributes to the dataset
         era5_ds = add_config_attributes(era5_ds, parsed_config)

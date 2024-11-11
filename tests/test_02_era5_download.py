@@ -203,10 +203,10 @@ def test_download_era5_data_mock(base_config):
     ), "The dataset should have the mock data source attribute"
 
 
-def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
+def test_download_era5_data_mock_with_slicing_and_resampling(base_config):
     """
     Test the full pipeline of downloading, slicing, and
-    thinning ERA5 data using a mock dataset.
+    resampling ERA5 data using a mock dataset.
     """
     base_config["start_datetime"] = "2019-01-01T06"
     base_config["end_datetime"] = "2019-01-05T18"
