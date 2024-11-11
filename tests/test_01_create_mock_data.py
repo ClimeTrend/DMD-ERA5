@@ -16,6 +16,14 @@ def test_create_mock_era5():
         levels=[1000, 850, 500],
     )
 
-    assert isinstance(mock_ds, xr.Dataset)
-    assert "temperature" in mock_ds.data_vars
-    assert list(mock_ds.level.values) == [1000, 850, 500]
+    assert isinstance(
+        mock_ds, xr.Dataset
+    ), "Expected create_mock_era5 to return an xarray Dataset."
+    assert (
+        "temperature" in mock_ds.data_vars
+    ), "Expected 'temperature' variable in mock ERA5 dataset."
+    assert list(mock_ds.level.values) == [
+        1000,
+        850,
+        500,
+    ], "Expected levels to be [1000, 850, 500]."
