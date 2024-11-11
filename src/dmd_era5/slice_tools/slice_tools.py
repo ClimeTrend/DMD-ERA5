@@ -142,33 +142,30 @@ def thin_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
 def standardize_data(
     data: xr.DataArray,
     dim: str = "time",
-    mean_center: bool = True,
     scale: bool = True,
 ) -> xr.DataArray:
     """
-    Standardize the input DataArray by applying mean centering and scaling
-    along the specified dimension.
+    Standardize the input DataArray by applying mean centering and (optionally)
+    scaling to unit variance along the specified dimension.
 
     Args:
         data (xr.DataArray): The input data to standardize.
         dim (str): The dimension along which to standardize. Default is "time".
-        mean_center (bool): Whether to mean center the data. Default is True.
         scale (bool): Whether to scale the data. Default is True.
 
     Returns:
         xr.DataArray: The standardized data.
     """
-    log_and_print(logger, f"Mean centering: {mean_center}, Scaling: {scale}")
+    log_and_print(logger, f"Standardizing data along {dim} dimension...")
 
-    if mean_center:
-        # Mean center the data
-        log_and_print(
-            logger,
-            f"Applying mean centering with {mean_center} along {dim} dimension...",
-        )
-        data = data - data.mean(dim=dim)
+    # Mean center the data
+    log_and_print(
+        logger,
+        f"Removing mean along {dim} dimension...",
+    )
+    data = data - data.mean(dim=dim)
     if scale:
         # Scale the data by the standard deviation
-        log_and_print(logger, f"Applying scaling with {scale} along {dim} dimension...")
+        log_and_print(logger, f"Scaling to unit variance along {dim} dimension...")
         data = data / data.std(dim=dim)
     return data
