@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 import pytest
 import xarray as xr
+import yaml
 from git import Repo as GitRepo
 from pyprojroot import here
 
@@ -263,3 +264,29 @@ def test_add_era5_to_dvc(base_config, config):
     add_data_to_dvc(parsed_config["save_path"], era5_ds.attrs)
     with GitRepo(here()) as repo:
         repo.index.commit("Add ERA5 data to DVC")
+
+
+@pytest.mark.docker
+def test_dvc_file_and_log():
+    """
+    Test that the DVC file and log are correctly created and
+    that the log contains the expected metadata.
+    """
+    dvc_file_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.dvc"
+    dvc_log_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.yaml"
+    with GitRepo(here()) as repo:
+        dvc_file = list(repo.iter_commits(all=True, max_count=10, paths=dvc_file_path))
+        dvc_log = list(repo.iter_commits(all=True, max_count=10, paths=dvc_log_path))
+    assert len(dvc_file) == 2, "There should be two commits for the DVC file"
+    assert len(dvc_log) == 2, "There should be two commits for the DVC log file"
+    # check that the log file contains the expected metadata
+    with open(dvc_log_path) as f:
+        log_content = yaml.safe_load(f)
+    assert len(log_content) == 2, "The log file should contain two entries"
+    keys = list(log_content.keys())
+    assert log_content[keys[0]]["variables"] == [
+        "temperature"
+    ], "The first entry of the log should contain temperature data"
+    assert log_content[keys[1]]["variables"] == [
+        "u_component_of_wind"
+    ], "The second entry of the log should contain wind data"
