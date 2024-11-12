@@ -5,12 +5,11 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import xarray as xr
-import yaml
 from dvc.repo import Repo as DvcRepo
-from git import Repo as GitRepo
 from pyprojroot import here
 
 from dmd_era5 import (
+    add_data_to_dvc,
     config_reader,
     create_mock_era5,
     log_and_print,
@@ -205,45 +204,6 @@ def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
     return ds
 
 
-def add_config_to_dvc_log(
-    dvc_file_path: str, data_path, data_attrs: dict, git_add=False
-) -> None:
-    """
-    Add the configuration settings as metadata to a custom log file.
-    Each entry in the log file stores metadata for a single download
-    under a unique DVC md5 hash.
-
-    Args:
-        dvc_file_path (str): The path to the DVC file.
-        data_path (str): The path to the data file.
-        data_attrs (dict): The attributes of the data file.
-        git_add (bool): Whether to stage the log file for commit.
-    """
-
-    # get the md5 hash of the dvc file
-    with open(dvc_file_path) as f:
-        dvc_file_content = yaml.safe_load(f)
-    md5_hash = dvc_file_content["outs"][0]["md5"]
-
-    log_file = data_path + ".yaml"
-
-    # Create the log file if it does not exist
-    if not os.path.exists(log_file):
-        with open(log_file, "w") as f:
-            f.write("")
-
-    # Add the metadata to the log file
-    with open(log_file, "a") as f:
-        f.write(f"{md5_hash}:\n")
-        for key, value in data_attrs.items():
-            f.write(f"  {key}: {value}\n")
-
-    # Stage the log file for commit
-    if git_add:
-        with GitRepo(here()) as repo:
-            repo.index.add([log_file])
-
-
 def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.Dataset:
     """
     Download ERA5 data from the specified source path and return an xarray Dataset.
@@ -322,25 +282,6 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         raise ValueError(msg) from e
 
 
-def add_data_to_dvc(data_path: str, data_attrs: dict) -> None:
-    """
-    Add data to Data Version Control (DVC) and log the metadata.
-
-    Args:
-        data_path (str): The path to the data file.
-        data_attrs (dict): The attributes of the data file.
-    """
-    try:
-        log_and_print(logger, "Adding data to DVC...")
-        with DvcRepo(here()) as repo:
-            repo.add(data_path)
-        dvc_file_path = os.path.join(data_path + ".dvc")
-        add_config_to_dvc_log(dvc_file_path, data_path, data_attrs, git_add=True)
-        log_and_print(logger, "Data added to DVC.")
-    except Exception as e:
-        log_and_print(logger, f"Error adding data to DVC: {e}", level="error")
-
-
 def main(use_mock_data: bool = False, add_to_dvc: bool = False) -> None:
     """
     Main function to run the ERA5 download process.
@@ -360,7 +301,12 @@ def main(use_mock_data: bool = False, add_to_dvc: bool = False) -> None:
         log_and_print(logger, f"ERA5 download process failed: {e}", level="error")
 
     if add_to_dvc:
-        add_data_to_dvc(parsed_config["save_path"], era5_ds.attrs)
+        try:
+            log_and_print(logger, "Adding ERA5 slice to DVC...")
+            add_data_to_dvc(parsed_config["save_path"], era5_ds.attrs)
+            log_and_print(logger, "ERA5 slice added to DVC.")
+        except Exception as e:
+            log_and_print(logger, f"Error adding ERA5 slice to DVC: {e}", level="error")
 
 
 if __name__ == "__main__":
