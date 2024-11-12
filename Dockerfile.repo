@@ -7,4 +7,3 @@ RUN git init
 RUN pip install ".[dev]"
 RUN dvc init
 RUN dvc config core.autostage true
-CMD ["sh", "-c", "pytest -s -m docker"]
