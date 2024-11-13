@@ -295,3 +295,43 @@ def test_dvc_file_and_log():
     assert dvc_log_content[dvc_log_keys[1]]["variables"] == [
         "u_component_of_wind"
     ], "The second entry of the log should contain wind data"
+
+
+@pytest.mark.docker
+def test_dvc_md5_hashes():
+    """
+    Test that the DVC md5 hashes are correctly set in the DVC log
+    """
+
+    # the last log entry should contain the same md5 hash as
+    # the last commit of the DVC file
+    with open(dvc_file_path) as f:
+        dvc_file_content = yaml.safe_load(f)
+    md5_hash = dvc_file_content["outs"][0]["md5"]
+    with open(dvc_log_path) as f:
+        dvc_log_content = yaml.safe_load(f)
+    dvc_log_keys = list(dvc_log_content.keys())
+    assert (
+        md5_hash == dvc_log_keys[1]
+    ), "The md5 hash in the last commit of the DVC file should match the last log entry"
+
+    # the first log entry should contain the same md5 hash as
+    # the first commit of the DVC file
+    # checkout the first commit of the DVC file
+    with GitRepo(here()) as repo:
+        repo.git.checkout("HEAD~1", dvc_file_path)
+    with open(dvc_file_path) as f:
+        dvc_file_content = yaml.safe_load(f)
+    md5_hash = dvc_file_content["outs"][0]["md5"]
+    assert md5_hash == dvc_log_keys[0], """
+    The md5 hash in the first commit of the DVC file
+    should match the first log entry
+    """
+
+    # restore the DVC file
+    with GitRepo(here()) as repo:
+        repo.git.restore("--staged", dvc_file_path)
+        repo.git.restore(dvc_file_path)
+        diff = repo.git.diff("HEAD", dvc_file_path)  # check that the file is restored
+
+    assert diff == "", "The DVC file should have been Git restored"
