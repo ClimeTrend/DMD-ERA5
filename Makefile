@@ -19,7 +19,7 @@ pytest-docker-build:
 
 # Run tests marked as "docker" in Docker container
 pytest-docker-run:
-	docker run $(IMAGE_NAME_PYTEST)
+	docker run --rm $(IMAGE_NAME_PYTEST)
 
 # Create DVC local remote
 dvc-local-remote:
