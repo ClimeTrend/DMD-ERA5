@@ -56,7 +56,9 @@ jobs:
         run: git init
 
       - name: Initialize DVC
-        run: dvc init
+        run: |
+          dvc init
+          dvc config core.autostage true
 
       - name: Test package
         run: >-
