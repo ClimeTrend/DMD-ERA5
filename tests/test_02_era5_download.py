@@ -266,27 +266,32 @@ def test_add_era5_to_dvc(base_config, config):
         repo.index.commit("Add ERA5 data to DVC")
 
 
+dvc_file_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.dvc"
+dvc_log_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.yaml"
+
+
 @pytest.mark.docker
 def test_dvc_file_and_log():
     """
-    Test that the DVC file and log are correctly created and
-    that the log contains the expected metadata.
+    Test that the DVC file and log are correctly created, are
+    tracked by Git, and contain the expected metadata.
     """
-    dvc_file_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.dvc"
-    dvc_log_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.yaml"
+
+    # check that the DVC file and log have been created and committed
     with GitRepo(here()) as repo:
         dvc_file = list(repo.iter_commits(all=True, max_count=10, paths=dvc_file_path))
         dvc_log = list(repo.iter_commits(all=True, max_count=10, paths=dvc_log_path))
     assert len(dvc_file) == 2, "There should be two commits for the DVC file"
     assert len(dvc_log) == 2, "There should be two commits for the DVC log file"
+
     # check that the log file contains the expected metadata
     with open(dvc_log_path) as f:
-        log_content = yaml.safe_load(f)
-    assert len(log_content) == 2, "The log file should contain two entries"
-    keys = list(log_content.keys())
-    assert log_content[keys[0]]["variables"] == [
+        dvc_log_content = yaml.safe_load(f)
+    assert len(dvc_log_content) == 2, "The log file should contain two entries"
+    dvc_log_keys = list(dvc_log_content.keys())
+    assert dvc_log_content[dvc_log_keys[0]]["variables"] == [
         "temperature"
     ], "The first entry of the log should contain temperature data"
-    assert log_content[keys[1]]["variables"] == [
+    assert dvc_log_content[dvc_log_keys[1]]["variables"] == [
         "u_component_of_wind"
     ], "The second entry of the log should contain wind data"
