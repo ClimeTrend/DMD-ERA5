@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import pytest
 import xarray as xr
 import yaml
+from dvc.repo import Repo as DvcRepo
 from git import Repo as GitRepo
 from pyprojroot import here
 
@@ -268,6 +269,7 @@ def test_add_era5_to_dvc(base_config, config):
 
 dvc_file_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.dvc"
 dvc_log_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.yaml"
+data_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc"
 
 
 @pytest.mark.docker
@@ -334,4 +336,37 @@ def test_dvc_md5_hashes():
         repo.git.restore(dvc_file_path)
         diff = repo.git.diff("HEAD", dvc_file_path)  # check that the file is restored
 
+    assert diff == "", "The DVC file should have been Git restored"
+
+
+@pytest.mark.docker
+def test_dvc_data_versions():
+    """
+    Test that the data versions are correctly tracked by DVC
+    """
+
+    # test that the current version has u_component_of_wind data
+    data = xr.open_dataset(data_path)
+    data_vars = next(iter(data.data_vars))
+    assert data_vars == "u_component_of_wind", "The data should contain wind data"
+    data.close()
+
+    # checkout the first commit of the DVC file
+    # to test that the data version has temperature data
+    with GitRepo(here()) as repo:
+        repo.git.checkout("HEAD~1", dvc_file_path)
+    with DvcRepo(here()) as repo:
+        repo.checkout()
+    data = xr.open_dataset(data_path)
+    data_vars = next(iter(data.data_vars))
+    assert data_vars == "temperature", "The data should contain temperature data"
+    data.close()
+
+    # restore the DVC file
+    with GitRepo(here()) as repo:
+        repo.git.restore("--staged", dvc_file_path)
+        repo.git.restore(dvc_file_path)
+        diff = repo.git.diff("HEAD", dvc_file_path)
+    with DvcRepo(here()) as repo:
+        repo.checkout()
     assert diff == "", "The DVC file should have been Git restored"
