@@ -220,39 +220,42 @@ def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
     ).all()
 
 
+@pytest.fixture
+def era5_data_config_a(base_config):
+    config = base_config.copy()
+    config["start_datetime"] = "2019-01-01T00"
+    config["end_datetime"] = "2019-01-01T04"
+    config["delta_time"] = "1h"
+    config["variables"] = "temperature"
+    config["levels"] = "1000"
+    return config
+
+
+@pytest.fixture
+def era5_data_config_b(base_config):
+    config = base_config.copy()
+    config["start_datetime"] = "2019-01-01T00"
+    config["end_datetime"] = "2019-01-01T04"
+    config["delta_time"] = "1h"
+    config["variables"] = "u_component_of_wind"
+    config["levels"] = "900"
+    return config
+
+
+dvc_file_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.dvc"
+dvc_log_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.yaml"
+data_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc"
+
+
 @pytest.mark.docker
-@pytest.mark.parametrize(
-    "config",
-    [
-        {
-            "start_datetime": "2019-01-01T00",
-            "end_datetime": "2019-01-01T04",
-            "delta_time": "1h",
-            "variables": "temperature",
-            "levels": "1000",
-        },
-        {
-            "start_datetime": "2019-01-01T00",
-            "end_datetime": "2019-01-01T04",
-            "delta_time": "1h",
-            "variables": "u_component_of_wind",
-            "levels": "900",
-        },
-    ],
-)
-def test_add_era5_to_dvc(base_config, config):
+@pytest.mark.parametrize("config", ["era5_data_config_a", "era5_data_config_b"])
+def test_add_era5_to_dvc(config, request):
     """
     Test that ERA5 slices can be added to and tracked by
     Data Version Control (DVC).
     """
-
-    base_config["start_datetime"] = config["start_datetime"]
-    base_config["end_datetime"] = config["end_datetime"]
-    base_config["delta_time"] = config["delta_time"]
-    base_config["variables"] = config["variables"]
-    base_config["levels"] = config["levels"]
-
-    parsed_config = config_parser(base_config)
+    config = request.getfixturevalue(config)
+    parsed_config = config_parser(config)
 
     era5_ds = create_mock_era5(
         start_datetime=parsed_config["start_datetime"],
@@ -265,11 +268,6 @@ def test_add_era5_to_dvc(base_config, config):
     add_data_to_dvc(parsed_config["save_path"], era5_ds.attrs)
     with GitRepo(here()) as repo:
         repo.index.commit("Add ERA5 data to DVC")
-
-
-dvc_file_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.dvc"
-dvc_log_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.yaml"
-data_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc"
 
 
 @pytest.mark.docker
