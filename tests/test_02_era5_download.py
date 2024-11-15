@@ -11,9 +11,9 @@ from dvc.repo import Repo as DvcRepo
 from git import Repo as GitRepo
 from pyprojroot import here
 
+from dmd_era5.dvc_tools import add_data_to_dvc, retrieve_data_from_dvc
 from dmd_era5.era5_download import (
     add_config_attributes,
-    add_data_to_dvc,
     config_parser,
     download_era5_data,
 )
@@ -368,3 +368,35 @@ def test_dvc_data_versions():
     with DvcRepo(here()) as repo:
         repo.checkout()
     assert diff == "", "The DVC file should have been Git restored"
+
+
+@pytest.mark.docker
+@pytest.mark.parametrize("config", ["era5_data_config_a", "era5_data_config_b"])
+def test_dvc_retrieve_era5_data(config, request):
+    """
+    Test that the correct ERA5 slice can be retrieved from DVC
+    using the retrieve_data_from_dvc function and the parsed
+    configuration.
+    """
+    config = request.getfixturevalue(config)
+    parsed_config = config_parser(config)
+    retrieve_data_from_dvc(parsed_config)
+    data = xr.open_dataset(parsed_config["save_path"])
+    data_vars = list(data.data_vars)
+    levels = data.level.values.tolist()
+    data.close()
+
+    # Git restore the DVC file, which will have been checked out
+    # by retrieve_data_from_dvc
+    with GitRepo(here()) as repo:
+        repo.git.restore("--staged", dvc_file_path)
+        repo.git.restore(dvc_file_path)
+        diff = repo.git.diff("HEAD", dvc_file_path)
+    with DvcRepo(here()) as repo:
+        repo.checkout()
+    assert diff == "", "The DVC file should have been Git restored"
+
+    for var in parsed_config["variables"]:
+        assert var in data_vars, f"The data should contain {var} data"
+    for level in parsed_config["levels"]:
+        assert level in levels, f"The data should contain level {level} data"
