@@ -261,6 +261,7 @@ dvc_log_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.yaml"
 data_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc"
 
 
+@pytest.mark.dependency(name="test_add_era5_to_dvc")
 @pytest.mark.docker
 @pytest.mark.parametrize(
     "config", ["era5_data_config_a", "era5_data_config_b", "era5_data_config_c"]
@@ -286,6 +287,7 @@ def test_add_era5_to_dvc(config, request):
         repo.index.commit("Add ERA5 data to DVC")
 
 
+@pytest.mark.dependency(name="test_dvc_file_and_log", depends=["test_add_era5_to_dvc"])
 @pytest.mark.docker
 def test_dvc_file_and_log():
     """
@@ -317,6 +319,7 @@ def test_dvc_file_and_log():
     ], "The third entry of the log should contain temperature and v-wind data"
 
 
+@pytest.mark.dependency(name="test_dvc_md5_hashes", depends=["test_dvc_file_and_log"])
 @pytest.mark.docker
 def test_dvc_md5_hashes():
     """
@@ -357,6 +360,7 @@ def test_dvc_md5_hashes():
     assert diff == "", "The DVC file should have been Git restored"
 
 
+@pytest.mark.dependency(name="test_dvc_data_versions", depends=["test_dvc_md5_hashes"])
 @pytest.mark.docker
 def test_dvc_data_versions():
     """
@@ -391,6 +395,9 @@ def test_dvc_data_versions():
     assert diff == "", "The DVC file should have been Git restored"
 
 
+@pytest.mark.dependency(
+    name="test_dvc_retrieve_era5_data", depends=["test_dvc_data_versions"]
+)
 @pytest.mark.docker
 @pytest.mark.parametrize(
     "config", ["era5_data_config_a", "era5_data_config_b", "era5_data_config_c"]
@@ -436,6 +443,9 @@ def era5_data_config_d(base_config):
     return config
 
 
+@pytest.mark.dependency(
+    name="test_main_era5_download", depends=["test_dvc_retrieve_era5_data"]
+)
 @pytest.mark.docker
 @pytest.mark.parametrize(
     "config", ["era5_data_config_a", "era5_data_config_b", "era5_data_config_d"]
