@@ -106,7 +106,8 @@ def retrieve_data_from_dvc(parsed_config: dict) -> None:
     dvc_file_path = parsed_config["save_path"] + ".dvc"
 
     if not os.path.exists(log_file_path) or not os.path.exists(dvc_file_path):
-        raise FileNotFoundError
+        msg = "DVC file or log file does not exist."
+        raise FileNotFoundError(msg)
 
     with open(log_file_path) as f:
         log_file_content = yaml.safe_load(f)
@@ -135,4 +136,5 @@ def retrieve_data_from_dvc(parsed_config: dict) -> None:
         with DvcRepo(here()) as repo:
             repo.checkout()
     else:
-        raise ValueError
+        msg = "No matching version of the data found in DVC."
+        raise ValueError(msg)
