@@ -242,13 +242,26 @@ def era5_data_config_b(base_config):
     return config
 
 
+@pytest.fixture
+def era5_data_config_c(base_config):
+    config = base_config.copy()
+    config["start_datetime"] = "2019-01-01T00"
+    config["end_datetime"] = "2019-01-01T04"
+    config["delta_time"] = "1h"
+    config["variables"] = "temperature,v_component_of_wind"
+    config["levels"] = "800,700"
+    return config
+
+
 dvc_file_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.dvc"
 dvc_log_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.yaml"
 data_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc"
 
 
 @pytest.mark.docker
-@pytest.mark.parametrize("config", ["era5_data_config_a", "era5_data_config_b"])
+@pytest.mark.parametrize(
+    "config", ["era5_data_config_a", "era5_data_config_b", "era5_data_config_c"]
+)
 def test_add_era5_to_dvc(config, request):
     """
     Test that ERA5 slices can be added to and tracked by
@@ -281,20 +294,24 @@ def test_dvc_file_and_log():
     with GitRepo(here()) as repo:
         dvc_file = list(repo.iter_commits(all=True, max_count=10, paths=dvc_file_path))
         dvc_log = list(repo.iter_commits(all=True, max_count=10, paths=dvc_log_path))
-    assert len(dvc_file) == 2, "There should be two commits for the DVC file"
-    assert len(dvc_log) == 2, "There should be two commits for the DVC log file"
+    assert len(dvc_file) == 3, "There should be 3 commits for the DVC file"
+    assert len(dvc_log) == 3, "There should be 3 commits for the DVC log file"
 
     # check that the log file contains the expected metadata
     with open(dvc_log_path) as f:
         dvc_log_content = yaml.safe_load(f)
-    assert len(dvc_log_content) == 2, "The log file should contain two entries"
+    assert len(dvc_log_content) == 3, "The log file should contain 3 entries"
     dvc_log_keys = list(dvc_log_content.keys())
     assert dvc_log_content[dvc_log_keys[0]]["variables"] == [
         "temperature"
     ], "The first entry of the log should contain temperature data"
     assert dvc_log_content[dvc_log_keys[1]]["variables"] == [
         "u_component_of_wind"
-    ], "The second entry of the log should contain wind data"
+    ], "The second entry of the log should contain u-wind data"
+    assert dvc_log_content[dvc_log_keys[2]]["variables"] == [
+        "temperature",
+        "v_component_of_wind",
+    ], "The third entry of the log should contain temperature and v-wind data"
 
 
 @pytest.mark.docker
@@ -312,14 +329,14 @@ def test_dvc_md5_hashes():
         dvc_log_content = yaml.safe_load(f)
     dvc_log_keys = list(dvc_log_content.keys())
     assert (
-        md5_hash == dvc_log_keys[1]
+        md5_hash == dvc_log_keys[-1]
     ), "The md5 hash in the last commit of the DVC file should match the last log entry"
 
     # the first log entry should contain the same md5 hash as
     # the first commit of the DVC file
     # checkout the first commit of the DVC file
     with GitRepo(here()) as repo:
-        repo.git.checkout("HEAD~1", dvc_file_path)
+        repo.git.checkout("HEAD~2", dvc_file_path)
     with open(dvc_file_path) as f:
         dvc_file_content = yaml.safe_load(f)
     md5_hash = dvc_file_content["outs"][0]["md5"]
@@ -343,16 +360,17 @@ def test_dvc_data_versions():
     Test that the data versions are correctly tracked by DVC
     """
 
-    # test that the current version has u_component_of_wind data
+    # test that the current version has temperature and v-wind data
     data = xr.open_dataset(data_path)
-    data_vars = next(iter(data.data_vars))
-    assert data_vars == "u_component_of_wind", "The data should contain wind data"
+    data_vars = list(data.data_vars)
+    assert sorted(data_vars) == ["temperature", "v_component_of_wind"], """
+    The data should contain temperature and v-wind data."""
     data.close()
 
     # checkout the first commit of the DVC file
     # to test that the data version has temperature data
     with GitRepo(here()) as repo:
-        repo.git.checkout("HEAD~1", dvc_file_path)
+        repo.git.checkout("HEAD~2", dvc_file_path)
     with DvcRepo(here()) as repo:
         repo.checkout()
     data = xr.open_dataset(data_path)
@@ -371,7 +389,9 @@ def test_dvc_data_versions():
 
 
 @pytest.mark.docker
-@pytest.mark.parametrize("config", ["era5_data_config_a", "era5_data_config_b"])
+@pytest.mark.parametrize(
+    "config", ["era5_data_config_a", "era5_data_config_b", "era5_data_config_c"]
+)
 def test_dvc_retrieve_era5_data(config, request):
     """
     Test that the correct ERA5 slice can be retrieved from DVC
