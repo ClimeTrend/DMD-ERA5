@@ -7,7 +7,7 @@ from __future__ import annotations
 from importlib.metadata import version
 
 from dmd_era5.config_reader import config_reader
-from dmd_era5.dvc_tools import add_data_to_dvc
+from dmd_era5.dvc_tools import add_data_to_dvc, retrieve_data_from_dvc
 from dmd_era5.logger import log_and_print, setup_logger
 from dmd_era5.utils import create_mock_era5, slice_era5_dataset, thin_era5_dataset
 
@@ -19,5 +19,6 @@ __all__ = [
     "slice_era5_dataset",
     "create_mock_era5",
     "add_data_to_dvc",
+    "retrieve_data_from_dvc",
 ]
 __version__ = version(__name__)
