@@ -215,10 +215,11 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         parsed_config (dict): Parsed configuration dictionary with the
         configuration parameters.
         use_mock_data (bool): Whether to use mock data instead of downloading,
-        for testing purposes.
+        for testing purposes. If True, the data will not be saved to disk.
 
     Returns:
-        xr.Dataset: An xarray Dataset containing the downloaded ERA5 data.
+        xr.Dataset: An xarray Dataset containing the downloaded ERA5 data
+        or the mock data.
     """
 
     try:
@@ -288,7 +289,7 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
 
 def main(
     config: dict = config, use_mock_data: bool = False, use_dvc: bool = False
-) -> None:
+) -> tuple[bool, bool]:
     """
     Main function to run the ERA5 download process.
     If using DVC, the function will attempt to retrieve the data from DVC first
@@ -300,11 +301,18 @@ def main(
         use_mock_data (bool): Whether to use mock data instead of downloading,
         for testing purposes.
         use_dvc (bool): Whether to use Data Version Control (DVC) to track the data.
+
+    Returns:
+        tuple[bool, bool]: A tuple of two booleans indicating whether the data was
+        added to DVC and whether it was retrieved from DVC.
     """
+
+    added_to_dvc = False
+    retrieved_from_dvc = False
     try:
         parsed_config = config_parser(config)
 
-        def handle_download_and_dvc():
+        def handle_download_and_dvc() -> bool:
             """Helper function to download data and add it to DVC."""
             era5_ds = download_era5_data(parsed_config, use_mock_data)
             log_and_print(logger, "ERA5 download process completed successfully.")
@@ -313,25 +321,35 @@ def main(
                     log_and_print(logger, "Adding ERA5 slice to DVC...")
                     add_data_to_dvc(parsed_config["save_path"], era5_ds.attrs)
                     log_and_print(logger, "ERA5 slice added to DVC.")
+                    return True
                 except Exception as e:
                     log_and_print(
                         logger, f"Error adding ERA5 slice to DVC: {e}", level="error"
                     )
+                    return False
+            return False
 
         if use_dvc:
             log_and_print(logger, "Attempting to retrieve ERA5 slice from DVC...")
             try:
-                retrieve_data_from_dvc(parsed_config["save_path"])
+                retrieve_data_from_dvc(parsed_config)
+                log_and_print(
+                    logger,
+                    f"ERA5 slice retrieved from DVC: {parsed_config['save_path']}",
+                )
+                retrieved_from_dvc = True
             except (FileNotFoundError, ValueError) as e:
                 log_and_print(logger, f"Could not retrieve ERA5 slice from DVC: {e}")
-                handle_download_and_dvc()
+                added_to_dvc = handle_download_and_dvc()
         else:
-            handle_download_and_dvc()
+            added_to_dvc = handle_download_and_dvc()
 
     except ValueError as e:
         log_and_print(logger, f"Configuration error: {e}", level="error")
     except Exception as e:
         log_and_print(logger, f"ERA5 download process failed: {e}", level="error")
+
+    return added_to_dvc, retrieved_from_dvc
 
 
 if __name__ == "__main__":
