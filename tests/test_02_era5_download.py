@@ -203,10 +203,10 @@ def test_download_era5_data_mock(base_config):
     ), "The dataset should have the mock data source attribute"
 
 
-def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
+def test_download_era5_data_mock_with_slicing_and_resampling(base_config):
     """
     Test the full pipeline of downloading, slicing, and
-    thinning ERA5 data using a mock dataset.
+    resampling ERA5 data using a mock dataset.
     """
     base_config["start_datetime"] = "2019-01-01T06"
     base_config["end_datetime"] = "2019-01-05T18"
@@ -218,12 +218,15 @@ def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
 
     assert era5_data.time.min().values.astype("datetime64[us]").astype(
         datetime
-    ) == datetime(2019, 1, 1, 6)
+    ) == datetime(2019, 1, 1, 6), "Expected start time to be 2019-01-01 06:00"
     assert era5_data.time.max().values.astype("datetime64[us]").astype(
         datetime
-    ) == datetime(2019, 1, 5, 18)
-    assert list(era5_data.level.values) == [1000, 500]
+    ) == datetime(2019, 1, 5, 18), "Expected end time to be 2019-01-05 18:00"
+    assert list(era5_data.level.values) == [
+        1000,
+        500,
+    ], "Expected levels to be [1000, 500]"
     assert (
         era5_data.time.diff("time").astype("timedelta64[ns]").astype(int)
         == 6 * 3600 * 1e9
-    ).all()
+    ).all(), "Expected time delta to be 6 hours"
