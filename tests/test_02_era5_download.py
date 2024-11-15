@@ -17,6 +17,9 @@ from dmd_era5.era5_download import (
     config_parser,
     download_era5_data,
 )
+from dmd_era5.era5_download import (
+    main as era5_download_main,
+)
 from dmd_era5.utils import create_mock_era5
 
 
@@ -420,3 +423,101 @@ def test_dvc_retrieve_era5_data(config, request):
         assert var in data_vars, f"The data should contain {var} data"
     for level in parsed_config["levels"]:
         assert level in levels, f"The data should contain level {level} data"
+
+
+@pytest.fixture
+def era5_data_config_d(base_config):
+    config = base_config.copy()
+    config["start_datetime"] = "2019-01-01T00"
+    config["end_datetime"] = "2019-01-01T04"
+    config["delta_time"] = "1h"
+    config["variables"] = "temperature"
+    config["levels"] = "500"
+    return config
+
+
+@pytest.mark.docker
+@pytest.mark.parametrize(
+    "config", ["era5_data_config_a", "era5_data_config_b", "era5_data_config_d"]
+)
+def test_main_era5_download(config, request):
+    """
+    Test the main function for downloading ERA5 data,
+    adding data to DVC, and retrieving data from DVC.
+
+    The expectation is that provided configurations A and B,
+    the data should be retrieved from DVC, and that the data
+    should contain the expected variables and levels. For
+    configuration D, the data should be added to DVC, and
+    the DVC log should be updated with the new entry.
+    """
+    config_dict = request.getfixturevalue(config)
+    parsed_config = config_parser(config_dict)
+    dvc_file_path = parsed_config["save_path"] + ".dvc"
+    dvc_log_path = parsed_config["save_path"] + ".yaml"
+
+    if config != "era5_data_config_d":
+        added_to_dvc, retrieved_from_dvc = era5_download_main(
+            config_dict, use_mock_data=True, use_dvc=True
+        )
+        assert (
+            not added_to_dvc
+        ), "The data should not have been added to DVC as it already exists."
+        assert retrieved_from_dvc, "The data should have been retrieved from DVC."
+
+        data = xr.open_dataset(parsed_config["save_path"])
+        data_vars = list(data.data_vars)
+        levels = data.level.values.tolist()
+        data.close()
+
+        if config == "era5_data_config_a":
+            assert (
+                data_vars[0] == "temperature"
+            ), "The data should contain temperature data"
+            assert (
+                levels[0] == 1000
+            ), "The data should contain data at pressure level 1000"
+        elif config == "era5_data_config_b":
+            assert (
+                data_vars[0] == "u_component_of_wind"
+            ), "The data should contain u-wind data"
+            assert (
+                levels[0] == 900
+            ), "The data should contain data at pressure level 900"
+
+        # Git restore the DVC file, which will have been checked out
+        # by when retrieving data from DVC. The DVC log should not be changed.
+        with GitRepo(here()) as repo:
+            repo.git.restore("--staged", dvc_file_path)
+            repo.git.restore(dvc_file_path)
+            diff_dvc_file = repo.git.diff("HEAD", dvc_file_path)
+            diff_dvc_log = repo.git.diff("HEAD", dvc_log_path)
+        with DvcRepo(here()) as repo:
+            repo.checkout()
+        assert diff_dvc_file == "", "The DVC file should have been Git restored"
+        assert diff_dvc_log == "", "The DVC log file should not have been changed"
+
+    else:
+        added_to_dvc, retrieved_from_dvc = era5_download_main(
+            config_dict, use_mock_data=True, use_dvc=True
+        )
+        assert added_to_dvc, "The data should have been added to DVC."
+        assert (
+            not retrieved_from_dvc
+        ), "The data should not have been retrieved from DVC."
+
+        # Make sure the a new entry has been added to the DVC log
+        # but that the DVC file has not been changed because we haven't
+        # saved the mock data to disk
+        with GitRepo(here()) as repo:
+            diff_dvc_log = repo.git.diff("HEAD", dvc_log_path)
+            diff_dvc_file = repo.git.diff("HEAD", dvc_file_path)
+        assert diff_dvc_log != "", "The DVC log file should have been changed"
+        assert diff_dvc_file == "", "The DVC file should not have been changed"
+
+        # Restore the DVC log
+        with GitRepo(here()) as repo:
+            repo.git.restore("--staged", dvc_log_path)
+            repo.git.restore(dvc_log_path)
+            diff_dvc_log = repo.git.diff("HEAD", dvc_log_path)
+        assert diff_dvc_log == "", "The DVC log file should have been Git restored"
