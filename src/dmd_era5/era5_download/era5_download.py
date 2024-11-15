@@ -286,19 +286,23 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         raise ValueError(msg) from e
 
 
-def main(use_mock_data: bool = False, use_dvc: bool = False) -> None:
+def main(
+    config: dict = config, use_mock_data: bool = False, use_dvc: bool = False
+) -> None:
     """
     Main function to run the ERA5 download process.
     If using DVC, the function will attempt to retrieve the data from DVC first
     before downloading it.
 
     Args:
+        config (dict): Configuration dictionary with the configuration parameters,
+        optional and primarily for testing purposes.
         use_mock_data (bool): Whether to use mock data instead of downloading,
         for testing purposes.
         use_dvc (bool): Whether to use Data Version Control (DVC) to track the data.
     """
     try:
-        parsed_config = config_parser()
+        parsed_config = config_parser(config)
 
         def handle_download_and_dvc():
             """Helper function to download data and add it to DVC."""
