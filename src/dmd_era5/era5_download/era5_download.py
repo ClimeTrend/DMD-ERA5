@@ -282,14 +282,14 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         raise ValueError(msg) from e
 
 
-def main(use_mock_data: bool = False, add_to_dvc: bool = False) -> None:
+def main(use_mock_data: bool = False, use_dvc: bool = False) -> None:
     """
     Main function to run the ERA5 download process.
 
     Args:
         config (dict): Configuration dictionary with the configuration parameters.
         use_mock_data (bool): Whether to use mock data instead of downloading.
-        add_to_dvc (bool): Whether to add the ERA5 data to DVC.
+        use_dvc (bool): Whether to use Data Version Control (DVC) to track the data.
     """
     try:
         parsed_config = config_parser()
@@ -300,7 +300,7 @@ def main(use_mock_data: bool = False, add_to_dvc: bool = False) -> None:
     except Exception as e:
         log_and_print(logger, f"ERA5 download process failed: {e}", level="error")
 
-    if add_to_dvc:
+    if use_dvc:
         try:
             log_and_print(logger, "Adding ERA5 slice to DVC...")
             add_data_to_dvc(parsed_config["save_path"], era5_ds.attrs)
@@ -322,11 +322,13 @@ if __name__ == "__main__":
     is_dvc_repo = check_if_dvc_repo()
     if not is_dvc_repo:
         log_and_print(
-            logger, "Not a DVC repository. Not adding data to DVC.", level="warning"
+            logger,
+            "Not a Data Version Control (DVC) repository. Will not use DVC.",
+            level="warning",
         )
         log_and_print(
             logger, "To initialize a DVC repository, run `dvc init`.", level="warning"
         )
         main()
     else:
-        main(add_to_dvc=True)
+        main(use_dvc=True)
