@@ -3,6 +3,7 @@ import subprocess
 from datetime import datetime
 
 import yaml
+from dvc.exceptions import CheckoutError
 from dvc.repo import Repo as DvcRepo
 from git import Repo as GitRepo
 from pyprojroot import here
@@ -97,7 +98,9 @@ def retrieve_data_from_dvc(parsed_config: dict) -> None:
     Given a parsed configuration, retrieve the correct version
     of the data from DVC, if it exists.
     If the dvc file or log file does not exist, raises FileNotFoundError.
-    If a matching version of the data does not exist, raises ValueError.
+    If a matching version of the data does not exist in the log, raises ValueError.
+    If a matching version of the data exists in the log but cannot be retrieved
+    from DVC,raises ValueError.
 
     Args:
         parsed_config (dict): The parsed configuration.
@@ -112,7 +115,10 @@ def retrieve_data_from_dvc(parsed_config: dict) -> None:
     with open(log_file_path) as f:
         log_file_content = yaml.safe_load(f)
 
-    md5_hash_keep = None
+    # Find the most recent version of the data that matches the requested
+    # variables, levels, and source path in the configuration, by looping
+    # through the log file content.
+    md5_hash_keep = None  # The md5 hash of the version to keep
     date_downloaded_keep = datetime(1970, 1, 1)
     for md5_hash, metadata in log_file_content.items():
         if (
@@ -130,11 +136,38 @@ def retrieve_data_from_dvc(parsed_config: dict) -> None:
     if md5_hash_keep:
         commit_hash = find_first_commit_with_md5_hash(md5_hash_keep, dvc_file_path)
         if commit_hash is None:
+            msg = """
+            Found a matching version of the data in the log file,
+            but could not retrieve it from DVC.
+            """
             raise ValueError
         with GitRepo(here()) as repo:
             repo.git.checkout(commit_hash, dvc_file_path)
         with DvcRepo(here()) as repo:
-            repo.checkout()
+            try:
+                repo.checkout()
+            except CheckoutError as e:
+                remotes = repo.config["remote"]
+                if remotes:
+                    print(
+                        "Attempting to fetch data from default remote DVC repository."
+                    )
+                    num_files = repo.fetch()
+                    if num_files > 0:
+                        print("Data successfully fetched.")
+                        repo.checkout()
+                    else:
+                        msg = """
+                        Found a matching version of the data in the log file,
+                        but could not retrieve it from DVC.
+                        """
+                        raise ValueError(msg) from e
+                else:
+                    msg = """
+                    Found a matching version of the data in the log file,
+                    but could not retrieve it from DVC.
+                    """
+                    raise ValueError(msg) from e
     else:
         msg = "No matching version of the data found in DVC."
         raise ValueError(msg)
