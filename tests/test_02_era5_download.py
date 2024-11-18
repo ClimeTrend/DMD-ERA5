@@ -2,6 +2,8 @@
 Tests for the era5_download module.
 """
 
+import os
+import shutil
 from datetime import datetime, timedelta
 
 import pytest
@@ -256,6 +258,17 @@ def era5_data_config_c(base_config):
     return config
 
 
+@pytest.fixture
+def era5_data_config_d(base_config):
+    config = base_config.copy()
+    config["start_datetime"] = "2019-01-01T00"
+    config["end_datetime"] = "2019-01-01T04"
+    config["delta_time"] = "1h"
+    config["variables"] = "temperature"
+    config["levels"] = "500"
+    return config
+
+
 dvc_file_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.dvc"
 dvc_log_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.yaml"
 data_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc"
@@ -432,17 +445,6 @@ def test_dvc_retrieve_era5_data(config, request):
         assert level in levels, f"The data should contain level {level} data"
 
 
-@pytest.fixture
-def era5_data_config_d(base_config):
-    config = base_config.copy()
-    config["start_datetime"] = "2019-01-01T00"
-    config["end_datetime"] = "2019-01-01T04"
-    config["delta_time"] = "1h"
-    config["variables"] = "temperature"
-    config["levels"] = "500"
-    return config
-
-
 @pytest.mark.dependency(
     name="test_main_era5_download", depends=["test_dvc_retrieve_era5_data"]
 )
@@ -531,3 +533,43 @@ def test_main_era5_download(config, request):
             repo.git.restore(dvc_log_path)
             diff_dvc_log = repo.git.diff("HEAD", dvc_log_path)
         assert diff_dvc_log == "", "The DVC log file should have been Git restored"
+
+
+@pytest.mark.dependency(
+    name="test_dvc_retrieval_from_remote",
+    depends=["test_add_era5_to_dvc", "test_main_era5_download"],
+)
+@pytest.mark.docker
+def test_dvc_retrieval_from_remote(era5_data_config_c):
+    """
+    Test that the data can be retrieved from the remote DVC repository.
+    We use configuration C, since it was the last configuration added
+    to DVC.
+
+    Since the data is pushed to the remote DVC repository, even if it
+    is deleted locally, it should be possible to retrieve it.
+    """
+
+    # Push to the remote DVC repository
+    with DvcRepo(here()) as repo:
+        repo.push()
+
+    # delete the local data file and the DVC cache
+    os.remove(data_path)
+    shutil.rmtree(".dvc/cache")
+    assert not os.path.exists(data_path), "The data file should have been deleted"
+    assert not os.path.exists(".dvc/cache"), "The DVC cache should have been deleted"
+
+    added_to_dvc, retrieved_from_dvc = era5_download_main(
+        era5_data_config_c, use_mock_data=True, use_dvc=True
+    )
+    assert not added_to_dvc, "The data should not have been added to DVC"
+    assert retrieved_from_dvc, "The data should have been retrieved from DVC"
+
+    data = xr.open_dataset(data_path)
+    data_vars = list(data.data_vars)
+    levels = data.level.values.tolist()
+    data.close()
+
+    assert sorted(data_vars) == ["temperature", "v_component_of_wind"]
+    assert sorted(levels) == [700, 800]

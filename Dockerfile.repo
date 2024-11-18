@@ -7,3 +7,5 @@ RUN git init
 RUN pip install ".[dev]"
 RUN dvc init
 RUN dvc config core.autostage true
+RUN mkdir dvc_local_remote
+RUN dvc remote add -d dvc_local_remote /app/dvc_local_remote
