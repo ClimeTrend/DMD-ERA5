@@ -60,6 +60,11 @@ jobs:
           dvc init
           dvc config core.autostage true
 
+      - name: Set up DVC local remote
+        run: |
+          mkdir dvc_local_remote
+          dvc remote add -d dvc_local_remote dvc_local_remote
+
       - name: Test package
         run: >-
           python -m pytest -m "" -ra --cov --cov-report=xml --cov-report=term
