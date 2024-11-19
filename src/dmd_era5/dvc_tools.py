@@ -93,7 +93,10 @@ def find_first_commit_with_md5_hash(md5_hash: str, dvc_file_path: str) -> str | 
     return None
 
 
-def retrieve_data_from_dvc(parsed_config: dict) -> None:
+def retrieve_data_from_dvc(
+    parsed_config: dict,
+    data_type: str = "era5_slice",
+) -> None:
     """
     Given a parsed configuration, retrieve the correct version
     of the data from DVC, if it exists.
@@ -104,6 +107,8 @@ def retrieve_data_from_dvc(parsed_config: dict) -> None:
 
     Args:
         parsed_config (dict): The parsed configuration.
+        data_type (str): The type of data to retrieve.
+            Currently only "era5_slice" is supported.
     """
     log_file_path = parsed_config["save_path"] + ".yaml"
     dvc_file_path = parsed_config["save_path"] + ".dvc"
@@ -120,18 +125,23 @@ def retrieve_data_from_dvc(parsed_config: dict) -> None:
     # through the log file content.
     md5_hash_keep = None  # The md5 hash of the version to keep
     date_downloaded_keep = datetime(1970, 1, 1)
-    for md5_hash, metadata in log_file_content.items():
-        if (
-            sorted(parsed_config["variables"])
-            == sorted(set(metadata["variables"]) & set(parsed_config["variables"]))
-            and sorted(parsed_config["levels"])
-            == sorted(set(metadata["levels"]) & set(parsed_config["levels"]))
-            and parsed_config["source_path"] == metadata["source_path"]
-        ):
-            date_downloaded = metadata["date_downloaded"]
-            if date_downloaded > date_downloaded_keep:
-                md5_hash_keep = md5_hash
-                date_downloaded_keep = date_downloaded
+
+    if data_type == "era5_slice":
+        for md5_hash, metadata in log_file_content.items():
+            if (
+                sorted(parsed_config["variables"])
+                == sorted(set(metadata["variables"]) & set(parsed_config["variables"]))
+                and sorted(parsed_config["levels"])
+                == sorted(set(metadata["levels"]) & set(parsed_config["levels"]))
+                and parsed_config["source_path"] == metadata["source_path"]
+            ):
+                date_downloaded = metadata["date_downloaded"]
+                if date_downloaded > date_downloaded_keep:
+                    md5_hash_keep = md5_hash
+                    date_downloaded_keep = date_downloaded
+    else:
+        msg = "Data type not supported."
+        raise ValueError(msg)
 
     if md5_hash_keep:
         commit_hash = find_first_commit_with_md5_hash(md5_hash_keep, dvc_file_path)
