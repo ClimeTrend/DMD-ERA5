@@ -155,8 +155,8 @@ def retrieve_data_from_dvc(
             repo.git.checkout(commit_hash, dvc_file_path)
         with DvcRepo(here()) as repo:
             try:
-                repo.checkout()
-            except CheckoutError as e:
+                repo.checkout(targets=[dvc_file_path])
+            except (CheckoutError, FileNotFoundError) as e:
                 remotes = repo.config["remote"]
                 if remotes:
                     print(
