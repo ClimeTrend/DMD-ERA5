@@ -46,6 +46,8 @@ make pytest-docker-run  # run the tests marked as "docker" in the Docker contain
 make pytest  # this is equivalent to just running `pytest`, i.e. it will run all tests but the ones marked as "docker"
 ```
 
+If you make changes to the package, you will need to rebuild the Docker image for the repo before running the tests, but if you just make changes to the tests, you can just rebuild the Docker image for the tests, which is faster.
+
 If you don't have Docker Desktop installed, you can download it from [here](https://www.docker.com/products/docker-desktop).
 
 # Coverage
