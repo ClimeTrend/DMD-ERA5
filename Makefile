@@ -18,6 +18,10 @@ pytest-docker-build:
 pytest-docker-run:
 	docker run --rm $(DMD_ERA5_IMAGE_NAME_PYTEST)
 
+# Initialize DVC
+dvc-init:
+	dvc init
+
 # Create DVC local remote
 dvc-local-remote:
 	@if [ -d $(DMD_ERA5_DVC_LOCAL_REMOTE) ]; then \
@@ -33,3 +37,11 @@ dvc-local-remote:
 		dvc remote add -d local_remote $(DMD_ERA5_DVC_LOCAL_REMOTE) --local; \
 		echo "DVC remote 'local_remote' added."; \
 	fi
+
+# Set up DVC autostage
+dvc-autostage:
+	dvc config core.autostage true
+	git add .dvc/config
+
+# Full DVC setup
+dvc-setup: dvc-init dvc-local-remote dvc-autostage
