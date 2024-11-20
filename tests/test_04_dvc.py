@@ -96,6 +96,8 @@ def test_add_era5_to_dvc(config, request):
     add_data_to_dvc(parsed_config["save_path"], era5_ds.attrs)
     with GitRepo(here()) as repo:
         repo.index.commit("Add ERA5 data to DVC")
+    with DvcRepo(here()) as repo:
+        repo.push()  # push to the remote DVC repository
 
 
 @pytest.mark.dependency(name="test_dvc_file_and_log", depends=["test_add_era5_to_dvc"])
@@ -338,19 +340,13 @@ def test_main_era5_download(config, request):
     depends=["test_add_era5_to_dvc", "test_main_era5_download"],
 )
 @pytest.mark.docker
-def test_dvc_retrieval_from_remote(era5_data_config_c):
+def test_dvc_retrieval_from_remote(era5_data_config_b):
     """
-    Test that the data can be retrieved from the remote DVC repository.
-    We use configuration C, since it was the last configuration added
-    to DVC.
+    Test that data can be retrieved from the remote DVC repository.
 
     Since the data is pushed to the remote DVC repository, even if it
     is deleted locally, it should be possible to retrieve it.
     """
-
-    # Push to the remote DVC repository
-    with DvcRepo(here()) as repo:
-        repo.push()
 
     # delete the local data file and the DVC cache
     os.remove(data_path)
@@ -359,7 +355,7 @@ def test_dvc_retrieval_from_remote(era5_data_config_c):
     assert not os.path.exists(".dvc/cache"), "The DVC cache should have been deleted"
 
     added_to_dvc, retrieved_from_dvc = era5_download_main(
-        era5_data_config_c, use_mock_data=True, use_dvc=True
+        era5_data_config_b, use_mock_data=True, use_dvc=True
     )
     assert not added_to_dvc, "The data should not have been added to DVC"
     assert retrieved_from_dvc, "The data should have been retrieved from DVC"
@@ -369,5 +365,5 @@ def test_dvc_retrieval_from_remote(era5_data_config_c):
     levels = data.level.values.tolist()
     data.close()
 
-    assert sorted(data_vars) == ["temperature", "v_component_of_wind"]
-    assert sorted(levels) == [700, 800]
+    assert sorted(data_vars) == ["u_component_of_wind"]
+    assert sorted(levels) == [900]
