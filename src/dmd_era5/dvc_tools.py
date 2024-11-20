@@ -3,7 +3,6 @@ import subprocess
 from datetime import datetime
 
 import yaml
-from dvc.exceptions import CheckoutError
 from dvc.repo import Repo as DvcRepo
 from git import Repo as GitRepo
 from pyprojroot import here
@@ -93,6 +92,30 @@ def find_first_commit_with_md5_hash(md5_hash: str, dvc_file_path: str) -> str | 
     return None
 
 
+def fetch_data_from_default_remote(repo: DvcRepo, targets: list) -> tuple:
+    """
+    Fetch data from the default remote DVC repository.
+
+    Args:
+        repo (DvcRepo): The DVC repository.
+        targets (list): The DVC targets to fetch.
+
+    Returns:
+        bool: Whether the remote exists.
+        bool: Whether the data was fetched successfully.
+    """
+
+    remotes = repo.config["remote"]
+    remote_exists = False
+    data_fetched = False
+    if remotes:
+        remote_exists = True
+        num_files = repo.fetch(targets=targets)
+        if num_files > 0:
+            data_fetched = True
+    return remote_exists, data_fetched
+
+
 def retrieve_data_from_dvc(
     parsed_config: dict,
     data_type: str = "era5_slice",
@@ -150,34 +173,31 @@ def retrieve_data_from_dvc(
             Found a matching version of the data in the log file,
             but could not retrieve it from DVC.
             """
-            raise ValueError
+            raise ValueError(msg)
         with GitRepo(here()) as repo:
             repo.git.checkout(commit_hash, dvc_file_path)
         with DvcRepo(here()) as repo:
-            try:
-                repo.checkout(targets=[dvc_file_path])
-            except (CheckoutError, FileNotFoundError) as e:
-                remotes = repo.config["remote"]
-                if remotes:
-                    print(
-                        "Attempting to fetch data from default remote DVC repository."
-                    )
-                    num_files = repo.fetch()
-                    if num_files > 0:
-                        print("Data successfully fetched.")
-                        repo.checkout()
-                    else:
-                        msg = """
-                        Found a matching version of the data in the log file,
-                        but could not retrieve it from DVC.
-                        """
-                        raise ValueError(msg) from e
-                else:
+            if os.path.exists(os.path.join(here(), ".dvc/cache")):
+                checked_out_files = repo.checkout(targets=[dvc_file_path])
+                print("Checked out files:", checked_out_files)
+            else:
+                print(
+                    "No DVC cache found. Attempting to fetch data from default remote."
+                )
+                remote_exists, data_fetched = fetch_data_from_default_remote(
+                    repo, targets=[dvc_file_path]
+                )
+                if data_fetched:
+                    print("Data successfully fetched.")
+                    checked_out_files = repo.checkout(targets=[dvc_file_path])
+                    print("Checked out files:", checked_out_files)
+                if not remote_exists or not data_fetched:
+                    print("Could not fetch data from default remote DVC repository.")
                     msg = """
                     Found a matching version of the data in the log file,
                     but could not retrieve it from DVC.
                     """
-                    raise ValueError(msg) from e
+                    raise ValueError(msg)
     else:
         msg = "No matching version of the data found in DVC."
         raise ValueError(msg)
