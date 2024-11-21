@@ -13,7 +13,6 @@ from dmd_era5.era5_svd import config_parser, svd_on_era5
 @pytest.fixture
 def base_config():
     return {
-        "file_path": "",
         "variables": "temperature",
         "levels": "all",
         "svd_type": "randomized",
@@ -41,7 +40,6 @@ def test_config_parser(base_config):
 @pytest.mark.parametrize(
     "field",
     [
-        "file_path",
         "variables",
         "levels",
         "svd_type",

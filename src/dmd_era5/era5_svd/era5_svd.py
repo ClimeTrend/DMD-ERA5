@@ -1,10 +1,8 @@
 import logging
-import os
 import sys
 from datetime import datetime
 
 import xarray as xr
-from pyprojroot import here
 
 from dmd_era5 import config_reader, log_and_print, setup_logger, slice_era5_dataset
 
@@ -33,7 +31,6 @@ def config_parser(config: dict = config) -> dict:
 
     # check for required fields
     required_fields = [
-        "file_path",
         "variables",
         "levels",
         "svd_type",
@@ -70,8 +67,12 @@ def config_parser(config: dict = config) -> dict:
 
     # parse SVD type
     parsed_config["svd_type"] = config["svd_type"]
-    if parsed_config["svd_type"] not in ["standard", "randomized"]:
-        msg = f"Invalid SVD type in config: {parsed_config['svd_type']}"
+    supported_svd_types = ["standard", "randomized"]
+    if parsed_config["svd_type"] not in supported_svd_types:
+        msg = f"""
+        Invalid SVD type in config: {parsed_config['svd_type']}.
+        Supported types: {supported_svd_types}.
+        """
         logger.error(msg)
         raise ValueError(msg)
 
@@ -81,15 +82,10 @@ def config_parser(config: dict = config) -> dict:
         not isinstance(parsed_config["delay_embedding"], int)
         or parsed_config["delay_embedding"] < 1
     ):
-        msg = f"Invalid delay embedding in config: {parsed_config['delay_embedding']}"
-        logger.error(msg)
-        raise ValueError(msg)
-
-    # parse file path
-    if os.path.exists(os.path.join(here(), config["file_path"])):
-        parsed_config["file_path"] = os.path.join(here(), config["file_path"])
-    else:
-        msg = f"Invalid file path in config: {config['file_path']}"
+        msg = f"""
+        Invalid delay embedding in config: {parsed_config['delay_embedding']}.
+        Supported values: positive integers.
+        """
         logger.error(msg)
         raise ValueError(msg)
 
