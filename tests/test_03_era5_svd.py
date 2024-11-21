@@ -14,7 +14,6 @@ from dmd_era5.era5_svd import config_parser, svd_on_era5
 def base_config():
     return {
         "file_path": "",
-        "save_name": "",
         "variables": "temperature",
         "levels": "all",
         "svd_type": "randomized",
@@ -43,7 +42,6 @@ def test_config_parser(base_config):
     "field",
     [
         "file_path",
-        "save_name",
         "variables",
         "levels",
         "svd_type",

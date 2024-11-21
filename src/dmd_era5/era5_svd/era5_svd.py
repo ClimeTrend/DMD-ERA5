@@ -34,7 +34,6 @@ def config_parser(config: dict = config) -> dict:
     # check for required fields
     required_fields = [
         "file_path",
-        "save_name",
         "variables",
         "levels",
         "svd_type",
