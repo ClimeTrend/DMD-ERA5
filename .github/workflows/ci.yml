@@ -43,9 +43,31 @@ jobs:
       - name: Install package
         run: python -m pip install .[dev]
 
+      - name: Delete .git and .dvc folders
+        run: rm -rf .git .dvc
+
+      - name: Delete .dvc and .yaml files in data folder
+        run: |
+          find data -type f -name "*.dvc" -delete
+          find data -type f -name "*.yaml" -delete
+          find data -type f -name "*.yml" -delete
+
+      - name: Initialize Git
+        run: git init
+
+      - name: Initialize DVC
+        run: |
+          dvc init
+          dvc config core.autostage true
+
+      - name: Set up DVC local remote
+        run: |
+          mkdir dvc_local_remote
+          dvc remote add -d dvc_local_remote dvc_local_remote
+
       - name: Test package
         run: >-
-          python -m pytest -ra --cov --cov-report=xml --cov-report=term
+          python -m pytest -m "" -ra --cov --cov-report=xml --cov-report=term
           --durations=20
 
       - name: Upload coverage report

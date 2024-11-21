@@ -22,7 +22,6 @@ def base_config():
         "delta_time": "1y",
         "variables": "all",
         "levels": "1000",
-        "save_name": "",
     }
 
 
@@ -69,7 +68,6 @@ def test_config_parser_basic(base_config):
         "delta_time",
         "variables",
         "levels",
-        "save_name",
     ],
 )
 def test_config_parser_missing_field(base_config, field):
@@ -155,22 +153,8 @@ def test_config_parser_variables(base_config, variables, expected):
     ), f"Expected variables to be {expected}, but got {parsed_config['variables']}"
 
 
-# --- Custom save_name
-@pytest.mark.parametrize(
-    "save_name", ["custom_name.nc", "era5_data.nc", "ERA5_data.nc"]
-)
-def test_config_parser_custom_save_name(base_config, save_name):
-    """Test the custom save_name."""
-    base_config["save_name"] = save_name
-    parsed_config = config_parser(base_config)
-    assert (
-        parsed_config["save_name"] == save_name
-    ), f"Expected save_name to be {save_name}, but got {parsed_config['save_name']}"
-
-
 def test_config_parser_generate_save_name(base_config):
-    """Test that the save_name is correctly generated when left blank."""
-    base_config["save_name"] = ""  # Set save_name to an empty string
+    """Test that the save_name is correctly generated."""
     base_config["start_datetime"] = "2023-01-01"
     base_config["end_datetime"] = "2023-12-31"
     base_config["delta_time"] = "1d"
@@ -203,10 +187,10 @@ def test_download_era5_data_mock(base_config):
     ), "The dataset should have the mock data source attribute"
 
 
-def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
+def test_download_era5_data_mock_with_slicing_and_resampling(base_config):
     """
     Test the full pipeline of downloading, slicing, and
-    thinning ERA5 data using a mock dataset.
+    resampling ERA5 data using a mock dataset.
     """
     base_config["start_datetime"] = "2019-01-01T06"
     base_config["end_datetime"] = "2019-01-05T18"
@@ -218,12 +202,15 @@ def test_download_era5_data_mock_with_slicing_and_thinning(base_config):
 
     assert era5_data.time.min().values.astype("datetime64[us]").astype(
         datetime
-    ) == datetime(2019, 1, 1, 6)
+    ) == datetime(2019, 1, 1, 6), "Expected start time to be 2019-01-01 06:00"
     assert era5_data.time.max().values.astype("datetime64[us]").astype(
         datetime
-    ) == datetime(2019, 1, 5, 18)
-    assert list(era5_data.level.values) == [1000, 500]
+    ) == datetime(2019, 1, 5, 18), "Expected end time to be 2019-01-05 18:00"
+    assert list(era5_data.level.values) == [
+        1000,
+        500,
+    ], "Expected levels to be [1000, 500]"
     assert (
         era5_data.time.diff("time").astype("timedelta64[ns]").astype(int)
         == 6 * 3600 * 1e9
-    ).all()
+    ).all(), "Expected time delta to be 6 hours"

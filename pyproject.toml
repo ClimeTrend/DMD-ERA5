@@ -32,13 +32,17 @@ dependencies = ["xarray",
     "fsspec",
     "gcsfs",
     "pyprojroot",
-    "scikit-learn",]
+    "dvc",
+    "GitPython",
+    "scikit-learn",
+    ]
 
 [project.optional-dependencies]
 dev = [
   "pytest >=6",
   "pytest-cov >=3",
   "pre-commit",
+  "pytest-dependency",
 ]
 
 [project.urls]
@@ -112,5 +116,8 @@ flake8-unused-arguments.ignore-variadic-names = true  # allow unused *args/**kwa
 
 [tool.mypy]
 [[tool.mypy.overrides]]
-module = "pyprojroot"
+module = [
+  "pyprojroot",
+  "dvc.*",
+]
 ignore_missing_imports = true
