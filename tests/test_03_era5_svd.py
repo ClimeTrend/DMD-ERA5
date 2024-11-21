@@ -13,6 +13,7 @@ from dmd_era5.era5_svd import config_parser, svd_on_era5
 @pytest.fixture
 def base_config():
     return {
+        "source_path": "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
         "variables": "temperature",
         "levels": "all",
         "svd_type": "randomized",

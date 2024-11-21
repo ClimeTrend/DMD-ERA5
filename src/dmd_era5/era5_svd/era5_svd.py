@@ -31,6 +31,7 @@ def config_parser(config: dict = config) -> dict:
 
     # check for required fields
     required_fields = [
+        "source_path",
         "variables",
         "levels",
         "svd_type",
