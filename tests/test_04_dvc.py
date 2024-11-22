@@ -83,7 +83,7 @@ def test_add_era5_to_dvc(config, request):
     Data Version Control (DVC).
     """
     config = request.getfixturevalue(config)
-    parsed_config = config_parser(config)
+    parsed_config = config_parser(config, section="era5-download")
 
     era5_ds = create_mock_era5(
         start_datetime=parsed_config["start_datetime"],
@@ -222,7 +222,7 @@ def test_dvc_retrieve_era5_data(config, request):
     configuration.
     """
     config = request.getfixturevalue(config)
-    parsed_config = config_parser(config)
+    parsed_config = config_parser(config, section="era5-download")
     retrieve_data_from_dvc(parsed_config)
     data = xr.open_dataset(parsed_config["save_path"])
     data_vars = list(data.data_vars)
@@ -264,7 +264,7 @@ def test_main_era5_download(config, request):
     the DVC log should be updated with the new entry.
     """
     config_dict = request.getfixturevalue(config)
-    parsed_config = config_parser(config_dict)
+    parsed_config = config_parser(config_dict, section="era5-download")
     dvc_file_path = parsed_config["save_path"] + ".dvc"
     dvc_log_path = parsed_config["save_path"] + ".yaml"
 
