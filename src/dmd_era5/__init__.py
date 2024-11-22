@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from importlib.metadata import version
 
+from dmd_era5.config_parser import config_parser
 from dmd_era5.config_reader import config_reader
 from dmd_era5.create_mock_data import create_mock_era5
 from dmd_era5.logger import log_and_print, setup_logger
@@ -23,5 +24,6 @@ __all__ = [
     "slice_era5_dataset",
     "create_mock_era5",
     "standardize_data",
+    "config_parser",
 ]
 __version__ = version(__name__)
