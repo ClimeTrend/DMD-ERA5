@@ -1,5 +1,8 @@
+import os
 from datetime import datetime, timedelta
 from logging import Logger
+
+from pyprojroot import here
 
 
 def validate_time_parameters(parsed_config: dict) -> None:
@@ -46,6 +49,7 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
     Args:
         config (dict): Configuration dictionary with the configuration parameters.
         section (str): Section of the configuration file.
+            For now, only "era5-download" is supported.
         logger (Logger): Logger object for logging messages. Default is None.
 
     Returns:
@@ -62,8 +66,8 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
             "delta_time",
             "variables",
             "levels",
-            "save_name",
         ]
+        save_directory = os.path.join(here(), "data/era5_download")
     else:
         msg = f"Section {section} not currently supported."
         raise ValueError(msg)
@@ -143,16 +147,17 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
             logger.error(msg)
         raise ValueError(msg) from e
 
-    # Generate the save name if not provided
-    if not config.get("save_name"):
-        # If left empty, the file will be saved with the following format:
-        # - "{start_datetime}_{end_datetime}_{delta_time}.nc"
+    # Generate the save name
+    # The file will be saved with the following format:
+    # - "{start_datetime}_{end_datetime}_{delta_time}.nc"
+    # and saved in the directory specified by save_directory
 
-        start_str = parsed_config["start_datetime"].strftime("%Y-%m-%dT%H")
-        end_str = parsed_config["end_datetime"].strftime("%Y-%m-%dT%H")
-        delta_str = config["delta_time"]
-        parsed_config["save_name"] = f"{start_str}_{end_str}_{delta_str}.nc"
-    else:
-        parsed_config["save_name"] = config["save_name"]
+    start_str = parsed_config["start_datetime"].strftime("%Y-%m-%dT%H")
+    end_str = parsed_config["end_datetime"].strftime("%Y-%m-%dT%H")
+    delta_str = config["delta_time"]
+    parsed_config["save_name"] = f"{start_str}_{end_str}_{delta_str}.nc"
+    parsed_config["save_path"] = os.path.join(
+        save_directory, parsed_config["save_name"]
+    )
 
     return parsed_config
