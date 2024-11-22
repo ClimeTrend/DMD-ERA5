@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from importlib.metadata import version
 
+from dmd_era5.config_parser import config_parser
 from dmd_era5.config_reader import config_reader
 from dmd_era5.create_mock_data import create_mock_era5
 from dmd_era5.dvc_tools import add_data_to_dvc, retrieve_data_from_dvc
@@ -26,5 +27,6 @@ __all__ = [
     "standardize_data",
     "add_data_to_dvc",
     "retrieve_data_from_dvc",
+    "config_parser",
 ]
 __version__ = version(__name__)

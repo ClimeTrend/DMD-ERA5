@@ -7,10 +7,8 @@ from datetime import datetime, timedelta
 import pytest
 import xarray as xr
 
-from dmd_era5.era5_download import (
-    config_parser,
-    download_era5_data,
-)
+from dmd_era5 import config_parser
+from dmd_era5.era5_download import download_era5_data
 
 
 @pytest.fixture
@@ -26,7 +24,7 @@ def base_config():
 
 
 def test_config_parser_basic(base_config):
-    parsed_config = config_parser(base_config)
+    parsed_config = config_parser(base_config, section="era5-download")
 
     assert (
         parsed_config["source_path"] == base_config["source_path"]
@@ -74,7 +72,7 @@ def test_config_parser_missing_field(base_config, field):
     """Test the missing field error."""
     del base_config[field]
     with pytest.raises(ValueError, match=f"Missing required field in config: {field}"):
-        config_parser(base_config)
+        config_parser(base_config, section="era5-download")
 
 
 # --- Invalid datetime
@@ -89,8 +87,8 @@ def test_config_parser_missing_field(base_config, field):
 def test_config_parser_invalid_datetime(base_config, datetime_field, invalid_datetime):
     """Test the invalid datetime error."""
     base_config[datetime_field] = invalid_datetime
-    with pytest.raises(ValueError, match="Invalid start"):
-        config_parser(base_config)
+    with pytest.raises(ValueError, match="Invalid datetime"):
+        config_parser(base_config, section="era5-download")
 
 
 @pytest.mark.parametrize(
@@ -104,7 +102,7 @@ def test_config_parser_invalid_datetime(base_config, datetime_field, invalid_dat
 def test_config_parser_levels(base_config, levels, expected):
     """Test the levels field."""
     base_config["levels"] = levels
-    parsed_config = config_parser(base_config)
+    parsed_config = config_parser(base_config, section="era5-download")
     assert (
         parsed_config["levels"] == expected
     ), f"Expected levels to be {expected}, but got {parsed_config['levels']}"
@@ -122,7 +120,7 @@ def test_config_parser_levels(base_config, levels, expected):
 def test_config_parser_delta_time(base_config, delta_time, expected):
     """Test the delta_time field."""
     base_config["delta_time"] = delta_time
-    parsed_config = config_parser(base_config)
+    parsed_config = config_parser(base_config, section="era5-download")
     assert (
         parsed_config["delta_time"] == expected
     ), f"Expected delta_time to be {expected}, but got {parsed_config['delta_time']}"
@@ -133,7 +131,7 @@ def test_config_parser_invalid_delta_time(base_config, invalid_delta):
     """Test the invalid delta_time error."""
     base_config["delta_time"] = invalid_delta
     with pytest.raises(ValueError, match="Error parsing delta_time"):
-        config_parser(base_config)
+        config_parser(base_config, section="era5-download")
 
 
 @pytest.mark.parametrize(
@@ -147,7 +145,7 @@ def test_config_parser_invalid_delta_time(base_config, invalid_delta):
 def test_config_parser_variables(base_config, variables, expected):
     """Test the variables field."""
     base_config["variables"] = variables
-    parsed_config = config_parser(base_config)
+    parsed_config = config_parser(base_config, section="era5-download")
     assert (
         parsed_config["variables"] == expected
     ), f"Expected variables to be {expected}, but got {parsed_config['variables']}"
@@ -159,7 +157,7 @@ def test_config_parser_generate_save_name(base_config):
     base_config["end_datetime"] = "2023-12-31"
     base_config["delta_time"] = "1d"
 
-    parsed_config = config_parser(base_config)
+    parsed_config = config_parser(base_config, section="era5-download")
 
     expected_save_name = "2023-01-01T00_2023-12-31T00_1d.nc"
     assert (
@@ -173,7 +171,7 @@ def test_config_parser_generate_save_name(base_config):
 
 def test_download_era5_data_mock(base_config):
     """Test that the download_era5_data function correctly creates a mock dataset."""
-    parsed_config = config_parser(base_config)
+    parsed_config = config_parser(base_config, section="era5-download")
 
     # Use the mock dataset
     era5_data = download_era5_data(parsed_config, use_mock_data=True)
@@ -196,7 +194,7 @@ def test_download_era5_data_mock_with_slicing_and_resampling(base_config):
     base_config["end_datetime"] = "2019-01-05T18"
     base_config["delta_time"] = "6h"
     base_config["levels"] = "1000,500"
-    parsed_config = config_parser(base_config)
+    parsed_config = config_parser(base_config, section="era5-download")
 
     era5_data = download_era5_data(parsed_config, use_mock_data=True)
 
