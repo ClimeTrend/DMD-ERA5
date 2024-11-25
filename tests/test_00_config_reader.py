@@ -136,9 +136,28 @@ def test_actual_config_era5_svd_section(actual_config_reader):
     assert "delay_embedding" in config, "era5-svd section should have delay_embedding"
 
 
-def test_actual_config_type(actual_config_reader):
-    """Test type conversion of configuration values in the actual configuration."""
+def test_actual_config_era5_download_type(actual_config_reader):
+    """
+    Test type conversion of era5-download config values in the actual configuration.
+    """
     config = actual_config_reader("era5-download")
 
     for key, value in config.items():
         assert isinstance(value, str), f"Expected {key} to be a string."
+
+
+def test_actual_config_era5_svd_type(actual_config_reader):
+    """
+    Test type conversion of era5-svd config values in the actual configuration.
+    """
+    config = actual_config_reader("era5-svd")
+
+    for key, value in config.items():
+        if key == "mean_center" or key == "scale":
+            assert isinstance(value, bool), f"Expected {key} to be a bool."
+        elif key == "svd_type":
+            assert isinstance(value, str), f"Expected {key} to be a string."
+        elif key == "delay_embedding":
+            assert isinstance(value, int), f"Expected {key} to be an int."
+        else:
+            assert isinstance(value, str), f"Expected {key} to be a string."
