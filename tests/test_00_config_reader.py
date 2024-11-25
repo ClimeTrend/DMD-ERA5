@@ -80,8 +80,8 @@ def test_config_reader_sections(test_config_reader):
 
     config_section_1 = test_config_reader("test-section-1")
     assert (
-        len(config_section_1) == 4
-    ), "Expected 4 parameters in test-section-1 from test config file."
+        len(config_section_1) == 5
+    ), "Expected 5 parameters in test-section-1 from test config file."
     assert (
         config_section_1["param_0"] == "value_0"
     ), "Expected param_0 to be 'value_0' in test-section-1 from test config file."
@@ -92,8 +92,11 @@ def test_config_reader_sections(test_config_reader):
         config_section_1["param_2"] == "value_2"
     ), "Expected param_2 to be 'value_2' in test-section-1 from test config file."
     assert (
-        config_section_1["param_3"] == "value_3"
-    ), "Expected param_3 to be 'value_3' in test-section-1 from test config file."
+        config_section_1["param_3"] is True
+    ), "Expected param_3 to be True in test-section-1 from test config file."
+    assert (
+        config_section_1["param_4"] == 2
+    ), "Expected param_4 to be 2 in test-section-1 from test config file."
 
 
 def test_config_nonexistent_section(test_config_reader):
