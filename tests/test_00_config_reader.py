@@ -121,6 +121,21 @@ def test_actual_config_era5_download_section(actual_config_reader):
     assert "levels" in config, "era5-download section should have levels"
 
 
+def test_actual_config_era5_svd_section(actual_config_reader):
+    """Test the contents of era5-svd section in the actual configuration."""
+    config = actual_config_reader("era5-svd")
+    assert "source_path" in config, "era5-svd section should have a source_path"
+    assert "start_datetime" in config, "era5-svd section should have a start_datetime"
+    assert "end_datetime" in config, "era5-svd section should have an end_datetime"
+    assert "delta_time" in config, "era5-svd section should have a delta_time"
+    assert "variables" in config, "era5-svd section should have variables"
+    assert "levels" in config, "era5-svd section should have levels"
+    assert "mean_center" in config, "era5-svd section should have mean-center"
+    assert "scale" in config, "era5-svd section should have scale"
+    assert "svd_type" in config, "era5-svd section should have svd_type"
+    assert "delay_embedding" in config, "era5-svd section should have delay_embedding"
+
+
 def test_actual_config_type(actual_config_reader):
     """Test type conversion of configuration values in the actual configuration."""
     config = actual_config_reader("era5-download")
