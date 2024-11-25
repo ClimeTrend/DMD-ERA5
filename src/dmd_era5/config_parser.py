@@ -49,15 +49,20 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
     Args:
         config (dict): Configuration dictionary with the configuration parameters.
         section (str): Section of the configuration file.
-            For now, only "era5-download" is supported.
+            For now, only "era5-download" and "era5-svd" are supported.
         logger (Logger): Logger object for logging messages. Default is None.
 
     Returns:
         dict: Dictionary with the parsed configuration parameters.
     """
 
+    if section not in ["era5-download", "era5-svd"]:
+        msg = f"Section {section} is not currently supported."
+        raise ValueError(msg)
+
     parsed_config = {}
 
+    # ---- Required fields ----
     if section == "era5-download":
         required_fields = [
             "source_path",
@@ -67,10 +72,19 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
             "variables",
             "levels",
         ]
-        save_directory = os.path.join(here(), "data/era5_download")
-    else:
-        msg = f"Section {section} not currently supported."
-        raise ValueError(msg)
+    elif section == "era5-svd":
+        required_fields = [
+            "source_path",
+            "variables",
+            "levels",
+            "svd_type",
+            "delay_embedding",
+            "mean_center",
+            "scale",
+            "start_datetime",
+            "end_datetime",
+            "delta_time",
+        ]
 
     # Check for required fields
     for field in required_fields:
@@ -80,6 +94,7 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
                 logger.error(msg)
             raise ValueError(msg)
 
+    # --- Parse the common fields ---
     # Parse the source path
     parsed_config["source_path"] = config["source_path"]
 
@@ -147,11 +162,15 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
             logger.error(msg)
         raise ValueError(msg) from e
 
-    # Generate the save name
+    # Generate the save name and path
     # The file will be saved with the following format:
     # - "{start_datetime}_{end_datetime}_{delta_time}.nc"
     # and saved in the directory specified by save_directory
 
+    if section == "era5-download":
+        save_directory = os.path.join(here(), "data", "era5_download")
+    elif section == "era5-svd":
+        save_directory = os.path.join(here(), "data", "era5_svd")
     start_str = parsed_config["start_datetime"].strftime("%Y-%m-%dT%H")
     end_str = parsed_config["end_datetime"].strftime("%Y-%m-%dT%H")
     delta_str = config["delta_time"]
@@ -159,5 +178,55 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
     parsed_config["save_path"] = os.path.join(
         save_directory, parsed_config["save_name"]
     )
+
+    # --- Parse the section-specific fields ---
+    if section == "era5-svd":
+        # Parse the SVD type
+        parsed_config["svd_type"] = config["svd_type"]
+        supported_svd_types = ["standard", "randomized"]
+        if parsed_config["svd_type"] not in supported_svd_types:
+            msg = f"""
+            Invalid SVD type in config: {parsed_config['svd_type']}.
+            Supported types: {supported_svd_types}.
+            """
+            if logger is not None:
+                logger.error(msg)
+            raise ValueError(msg)
+
+        # Parse the delay embedding
+        parsed_config["delay_embedding"] = config["delay_embedding"]
+        if (
+            not isinstance(parsed_config["delay_embedding"], int)
+            or parsed_config["delay_embedding"] < 1
+        ):
+            msg = f"""
+            Invalid delay embedding in config: {parsed_config['delay_embedding']}.
+            Delay embedding must be an integer greater than 0.
+            """
+            if logger is not None:
+                logger.error(msg)
+            raise ValueError(msg)
+
+        # Parse the mean centering
+        parsed_config["mean_center"] = config["mean_center"]
+        if not isinstance(parsed_config["mean_center"], bool):
+            msg = f"""
+            Invalid mean centering in config: {parsed_config['mean_center']}.
+            Mean centering must be a boolean value.
+            """
+            if logger is not None:
+                logger.error(msg)
+            raise ValueError(msg)
+
+        # Parse the scaling
+        parsed_config["scale"] = config["scale"]
+        if not isinstance(parsed_config["scale"], bool):
+            msg = f"""
+            Invalid scaling in config: {parsed_config['scale']}.
+            Scaling must be a boolean value.
+            """
+            if logger is not None:
+                logger.error(msg)
+            raise ValueError(msg)
 
     return parsed_config
