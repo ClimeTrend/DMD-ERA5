@@ -70,9 +70,10 @@ def test_config_parser_invalid_svd_type(base_config):
         config_parser(base_config, section="era5-svd")
 
 
-def test_config_parser_invalid_delay_embedding(base_config):
+@pytest.mark.parametrize("delay_embedding", [0, 1.2, "invalid"])
+def test_config_parser_invalid_delay_embedding(base_config, delay_embedding):
     """Test invalid delay embedding in the configuration."""
-    base_config["delay_embedding"] = 0
+    base_config["delay_embedding"] = delay_embedding
     with pytest.raises(ValueError, match="Invalid delay embedding in config"):
         config_parser(base_config, section="era5-svd")
 
