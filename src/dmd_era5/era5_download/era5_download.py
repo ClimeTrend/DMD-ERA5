@@ -96,6 +96,8 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
 
         # Selecting the time range and levels
         log_and_print(logger, "Slicing ERA5 Dataset...")
+        if parsed_config["levels"] == ["all"]:
+            parsed_config["levels"] = full_era5_ds.level.values.tolist()
         era5_ds = slice_era5_dataset(
             full_era5_ds,
             parsed_config["start_datetime"],

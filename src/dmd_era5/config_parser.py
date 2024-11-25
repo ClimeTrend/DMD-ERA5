@@ -155,7 +155,12 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
 
     # Parse the levels
     try:
-        parsed_config["levels"] = [int(level) for level in config["levels"].split(",")]
+        if config["levels"] == "all":
+            parsed_config["levels"] = ["all"]
+        else:
+            parsed_config["levels"] = [
+                int(level) for level in config["levels"].split(",")
+            ]
     except ValueError as e:
         msg = f"Error parsing levels from config: {e}"
         if logger is not None:
