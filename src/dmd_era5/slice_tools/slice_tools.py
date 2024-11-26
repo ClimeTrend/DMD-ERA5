@@ -3,6 +3,7 @@ import sys
 from datetime import datetime, timedelta
 
 import xarray as xr
+from numpy.lib.stride_tricks import sliding_window_view
 
 from dmd_era5 import log_and_print, setup_logger
 
@@ -169,3 +170,35 @@ def standardize_data(
         log_and_print(logger, f"Scaling to unit variance along {dim} dimension...")
         data = data / data.std(dim=dim)
     return data
+
+
+def apply_delay_embedding(X, d):
+    """
+    Apply delay embedding to temporal snapshots.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        The input data array of shape (n_space * n_variables, n_time).
+    d : int
+        The number of snapshots from X to include in each snapshot of the output.
+
+    Returns
+    -------
+    np.ndarray
+        The delay-embedded data array of shape
+        (n_space * n_variables * d, n_time - d + 1).
+    """
+
+    if X.ndim != 2:
+        msg = "Input array must be 2D."
+        raise ValueError(msg)
+    if not isinstance(d, int) or d <= 0:
+        msg = "Delay must be an integer greater than 0."
+        raise ValueError(msg)
+
+    return (
+        sliding_window_view(X.T, (d, X.shape[0]))[:, 0]
+        .reshape(X.shape[1] - d + 1, -1)
+        .T
+    )
