@@ -16,18 +16,23 @@ from dmd_era5.slice_tools import (
 )
 
 
-def test_slice_era5_dataset():
-    """Test that the slice_era5_dataset function correctly slices the dataset."""
-    mock_ds = create_mock_era5(
+@pytest.fixture
+def mock_era5_temperature():
+    """Create a mock ERA5 dataset with temperature data and multiple levels."""
+    return create_mock_era5(
         start_datetime="2019-01-01T00:00",
         end_datetime="2019-01-05T00:00",
         variables=["temperature"],
         levels=[1000, 850, 500],
     )
 
+
+def test_slice_era5_dataset(mock_era5_temperature):
+    """Test that the slice_era5_dataset function correctly slices the dataset."""
+
     # Test slicing
     sliced_ds = slice_era5_dataset(
-        mock_ds,
+        mock_era5_temperature,
         start_datetime="2019-01-02T06:00",
         end_datetime="2019-01-04T23:00",
         levels=[1000, 500],
