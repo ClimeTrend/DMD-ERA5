@@ -4,6 +4,7 @@
 
 # Build Docker image from Dockerfile to run the repository
 repo-docker-build:
+	docker image rm -f $(DMD_ERA5_IMAGE_NAME_REPO)
 	docker build -t $(DMD_ERA5_IMAGE_NAME_REPO) -f Dockerfile.repo .
 
 # Run tests except those marked as "docker"
@@ -12,6 +13,7 @@ pytest:
 
 # Build Docker image from Dockerfile to run tests marked as "docker"
 pytest-docker-build:
+	docker image rm -f $(DMD_ERA5_IMAGE_NAME_PYTEST)
 	docker build -t $(DMD_ERA5_IMAGE_NAME_PYTEST) -f Dockerfile.pytest .
 
 # Run tests marked as "docker" in Docker container
