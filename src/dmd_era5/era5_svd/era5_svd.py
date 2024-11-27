@@ -127,3 +127,29 @@ def svd_on_era5(parsed_config: dict, mock_era5: xr.Dataset | None = None):
         msg = f"Error slicing ERA5 data: {e}"
         log_and_print(logger, msg, level="error")
         raise Exception(msg) from e
+
+
+def main(
+    config: dict = config, use_mock_data: bool = False, use_dvc: bool = False
+) -> tuple[bool, bool]:
+    """
+    Main function to perform Singular Value Decomposition (SVD) on a slice of ERA5 data.
+
+    If using DVC, the function will attempt to retrieve SVD results from DVC first,
+    before performing a new SVD operation.
+    If appropriate SVD results are not found, the function will attempt to retrieve an
+    appropriate ERA5 slice from DVC on which to perform the SVD operation, if it cannot
+    find one in the working directory.
+    If an appropriate slice is not found in the working directory or DVC, an error
+    will be raised.
+
+    Args:
+        config (dict): Configuration dictionary with the configuration parameters,
+        optional and primarily intended for testing.
+        use_mock_data (bool): Use mock data for testing purposes.
+        use_dvc (bool): Whether to use Data Version Control (DVC).
+
+    Returns:
+        tuple[bool, bool]: A tuple of two booleans indicating whether the SVD results
+        were added to DVC and whether they were retrieved from DVC.
+    """
