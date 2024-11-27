@@ -28,6 +28,16 @@ def base_config():
     }
 
 
+@pytest.fixture
+def mock_era5():
+    return create_mock_era5(
+        start_datetime="2019-01-01",
+        end_datetime="2020-02-01",
+        variables=["temperature"],
+        levels=[1000],
+    )
+
+
 def test_config_parser_basic(base_config):
     parsed_config = config_parser(base_config, section="era5-svd")
     assert isinstance(parsed_config, dict)
@@ -88,12 +98,6 @@ def test_config_parser_invalid_n_components(base_config, n_components):
         config_parser(base_config, section="era5-svd")
 
 
-def test_svd_on_era5(base_config):
-    mock_era5 = create_mock_era5(
-        start_datetime="2019-01-01",
-        end_datetime="2020-02-01",
-        variables=["temperature"],
-        levels=[1000],
-    )
+def test_svd_on_era5(base_config, mock_era5):
     parsed_config = config_parser(base_config, section="era5-svd")
     svd_on_era5(parsed_config, mock_era5)
