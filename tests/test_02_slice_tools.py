@@ -196,16 +196,24 @@ def test_apply_delay_embedding_invalid_delay(d):
         apply_delay_embedding(np.zeros((3, 3)), d)
 
 
-def test_flatten_era5_variables_basic(mock_era5_temperature_wind):
+@pytest.mark.parametrize(
+    "mock_data", ["mock_era5_temperature", "mock_era5_temperature_wind"]
+)
+def test_flatten_era5_variables_basic(mock_data, request):
     """Basic test for the flatten_era5_variables function."""
 
-    data_combined, flattened_coords, variables = flatten_era5_variables(
-        mock_era5_temperature_wind
-    )
+    ds = request.getfixturevalue(mock_data)
+    data_combined, flattened_coords, variables = flatten_era5_variables(ds)
     assert data_combined.ndim == 2, "Expected 2D data array"
     assert sorted(flattened_coords.keys()) == sorted(
         ["level", "latitude", "longitude", "time"]
     ), "Expected coordinates to include level, latitude, longitude, and time"
-    assert sorted(variables) == sorted(
-        ["temperature", "u_component_of_wind"]
-    ), "Expected variables to include temperature and u_component_of_wind"
+    if mock_data == "mock_era5_temperature":
+        assert sorted(variables) == [
+            "temperature"
+        ], "Expected variable to be temperature"
+    elif mock_data == "mock_era5_temperature_wind":
+        assert sorted(variables) == [
+            "temperature",
+            "u_component_of_wind",
+        ], "Expected variables to be temperature and u_component_of_wind"
