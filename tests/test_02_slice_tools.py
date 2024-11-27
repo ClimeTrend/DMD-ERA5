@@ -10,6 +10,7 @@ import pytest
 from dmd_era5.create_mock_data import create_mock_era5
 from dmd_era5.slice_tools import (
     apply_delay_embedding,
+    flatten_era5_variables,
     resample_era5_dataset,
     slice_era5_dataset,
     standardize_data,
@@ -24,6 +25,17 @@ def mock_era5_temperature():
         end_datetime="2019-01-05T00:00",
         variables=["temperature"],
         levels=[1000, 850, 500],
+    )
+
+
+@pytest.fixture
+def mock_era5_temperature_wind():
+    """Create a mock ERA5 dataset with temperature and wind data and multiple levels."""
+    return create_mock_era5(
+        start_datetime="2019-01-01T00:00",
+        end_datetime="2019-01-03T00:00",
+        variables=["temperature", "u_component_of_wind"],
+        levels=[1000, 850],
     )
 
 
@@ -182,3 +194,18 @@ def test_apply_delay_embedding_invalid_delay(d):
     """Test the apply_delay_embedding function with invalid delay."""
     with pytest.raises(ValueError, match="Delay must be an integer greater than 0."):
         apply_delay_embedding(np.zeros((3, 3)), d)
+
+
+def test_flatten_era5_variables_basic(mock_era5_temperature_wind):
+    """Basic test for the flatten_era5_variables function."""
+
+    data_combined, flattened_coords, variables = flatten_era5_variables(
+        mock_era5_temperature_wind
+    )
+    assert data_combined.ndim == 2, "Expected 2D data array"
+    assert sorted(flattened_coords.keys()) == sorted(
+        ["level", "latitude", "longitude", "time"]
+    ), "Expected coordinates to include level, latitude, longitude, and time"
+    assert sorted(variables) == sorted(
+        ["temperature", "u_component_of_wind"]
+    ), "Expected variables to include temperature and u_component_of_wind"
