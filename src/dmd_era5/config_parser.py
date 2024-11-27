@@ -84,6 +84,7 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
             "start_datetime",
             "end_datetime",
             "delta_time",
+            "n_components",
         ]
 
     # Check for required fields
@@ -229,6 +230,20 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
             msg = f"""
             Invalid scaling in config: {parsed_config['scale']}.
             Scaling must be a boolean value.
+            """
+            if logger is not None:
+                logger.error(msg)
+            raise ValueError(msg)
+
+        # Parse the number of components
+        parsed_config["n_components"] = config["n_components"]
+        if (
+            not isinstance(parsed_config["n_components"], int)
+            or parsed_config["n_components"] < 1
+        ):
+            msg = f"""
+            Invalid number of components in config: {parsed_config['n_components']}.
+            Number of components must be an integer greater than 0.
             """
             if logger is not None:
                 logger.error(msg)

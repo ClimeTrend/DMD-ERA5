@@ -24,6 +24,7 @@ def base_config():
         "start_datetime": "2019-01-01T06",
         "end_datetime": "2020-01-01T12",
         "delta_time": "1h",
+        "n_components": 10,
     }
 
 
@@ -54,6 +55,7 @@ def test_config_parser_basic(base_config):
         "start_datetime",
         "end_datetime",
         "delta_time",
+        "n_components",
     ],
 )
 def test_config_parser_missing_field(base_config, field):
@@ -75,6 +77,14 @@ def test_config_parser_invalid_delay_embedding(base_config, delay_embedding):
     """Test invalid delay embedding in the configuration."""
     base_config["delay_embedding"] = delay_embedding
     with pytest.raises(ValueError, match="Invalid delay embedding in config"):
+        config_parser(base_config, section="era5-svd")
+
+
+@pytest.mark.parametrize("n_components", [0, 1.2, "invalid"])
+def test_config_parser_invalid_n_components(base_config, n_components):
+    """Test invalid number of components in the configuration."""
+    base_config["n_components"] = n_components
+    with pytest.raises(ValueError, match="Invalid number of components in config"):
         config_parser(base_config, section="era5-svd")
 
 

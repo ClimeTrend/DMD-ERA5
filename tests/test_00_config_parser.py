@@ -34,6 +34,7 @@ def base_config_era5_svd():
         "delay_embedding": 2,
         "mean_center": True,
         "scale": True,
+        "n_components": 10,
     }
 
 
