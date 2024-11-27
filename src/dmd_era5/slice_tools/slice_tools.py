@@ -2,6 +2,7 @@ import logging
 import sys
 from datetime import datetime, timedelta
 
+import numpy as np
 import xarray as xr
 from numpy.lib.stride_tricks import sliding_window_view
 
@@ -202,3 +203,53 @@ def apply_delay_embedding(X, d):
         .reshape(X.shape[1] - d + 1, -1)
         .T
     )
+
+
+def flatten_era5_variables(era5_ds: xr.Dataset) -> tuple[np.ndarray, dict, list]:
+    """
+    Flatten the variables in an ERA5 dataset to a single two-dimensional NumPy array.
+
+    Parameters
+    ----------
+    era5_ds : xr.Dataset
+        The input ERA5 dataset.
+
+    Returns
+    -------
+    np.ndarray
+        The flattened array of variables, with shape (n_space * n_variables, n_time),
+        where n_space = n_level * n_lat * n_lon. Variables are concatenated along the
+        first dimension (space).
+    dict
+        A dictionary containing the coordinates of the flattened array, with keys
+        "level", "latitude", "longitude", and "time". "level", "latitude", and
+        "longitude" are 1D arrays with n_space elements, and "time" is a 1D array
+        with n_time elements.
+    list
+        A list of length n_variables, containing the names of the variables
+        in the order they appear in the flattened array.
+    """
+
+    variables: list[str] = list(map(str, era5_ds.data_vars.keys()))
+    coords: list[str] = list(map(str, era5_ds.coords.keys()))
+    must_have_coords = ["latitude", "longitude", "time", "level"]
+    spatial_stack_order = ["level", "latitude", "longitude"]
+
+    if sorted(coords) != sorted(must_have_coords):
+        msg = f"Missing required coordinates: {must_have_coords}."
+        raise ValueError(msg)
+
+    # stack the spatial dimensions
+    stacked = era5_ds.stack(space=spatial_stack_order)
+
+    # create a list of variable arrays with shape (n_space, n_time)
+    data_list = [stacked[var].transpose("space", "time").values for var in variables]
+    # concatenate the variable arrays along the space dimension
+    data_combined = np.concatenate(data_list, axis=0)
+
+    # create a dictionary of the coordinates of the flattened array
+    flattened_coords = dict.fromkeys([*spatial_stack_order, "time"])
+    for coord in flattened_coords:
+        flattened_coords[coord] = stacked[coord].values
+
+    return data_combined, flattened_coords, variables
