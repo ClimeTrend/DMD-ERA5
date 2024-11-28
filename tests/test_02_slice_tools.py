@@ -224,7 +224,7 @@ def test_flatten_era5_variables_basic(mock_data, request):
 
 def test_flatten_era5_variables_array_dims(mock_era5_temperature_wind):
     """Test the dimensions of the flattened data array."""
-    data_combined, _, _ = flatten_era5_variables(mock_era5_temperature_wind)
+    da = flatten_era5_variables(mock_era5_temperature_wind)
 
     sizes = dict(mock_era5_temperature_wind.sizes)
     n_time = sizes["time"]
@@ -234,7 +234,7 @@ def test_flatten_era5_variables_array_dims(mock_era5_temperature_wind):
     n_space = n_lat * n_lon * n_level
     n_vars = 2  # temperature and u_component_of_wind
 
-    assert data_combined.shape == (
+    assert da.values.shape == (
         n_space * n_vars,
         n_time,
     ), "Expected flattened data shape to be (n_space * n_vars, n_time)"
