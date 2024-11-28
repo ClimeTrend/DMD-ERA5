@@ -203,17 +203,20 @@ def test_flatten_era5_variables_basic(mock_data, request):
     """Basic test for the flatten_era5_variables function."""
 
     ds = request.getfixturevalue(mock_data)
-    data_combined, flattened_coords, variables = flatten_era5_variables(ds)
-    assert data_combined.ndim == 2, "Expected 2D data array"
-    assert sorted(flattened_coords.keys()) == sorted(
-        ["level", "latitude", "longitude", "time"]
-    ), "Expected coordinates to include level, latitude, longitude, and time"
+    da = flatten_era5_variables(ds)
+    assert da.values.ndim == 2, "Expected 2D data array"
+    assert sorted(da.dims) == sorted(
+        ["space", "time"]
+    ), "Expected data dimensions to be space, time"
+    assert sorted(da.coords) == sorted(
+        ["space", "time", "variable"]
+    ), "Expected coordinates to be space, time, variable"
     if mock_data == "mock_era5_temperature":
-        assert sorted(variables) == [
+        assert sorted(da.attrs["original_variables"]) == [
             "temperature"
         ], "Expected variable to be temperature"
     elif mock_data == "mock_era5_temperature_wind":
-        assert sorted(variables) == [
+        assert sorted(da.attrs["original_variables"]) == [
             "temperature",
             "u_component_of_wind",
         ], "Expected variables to be temperature and u_component_of_wind"
