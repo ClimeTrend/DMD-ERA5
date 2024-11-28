@@ -187,7 +187,11 @@ def main(
                 )
                 retrieved_from_dvc = True
             except (FileNotFoundError, ValueError) as e:
-                log_and_print(logger, f"Could not retrieve ERA5 slice from DVC: {e}")
+                log_and_print(
+                    logger,
+                    f"Could not retrieve ERA5 slice from DVC: {e}",
+                    level="warning",
+                )
                 added_to_dvc = handle_download_and_dvc()
         else:
             download_era5_data(parsed_config, use_mock_data)
