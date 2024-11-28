@@ -209,8 +209,8 @@ def test_flatten_era5_variables_basic(mock_data, request):
         ["space", "time"]
     ), "Expected data dimensions to be space, time"
     assert sorted(da.coords) == sorted(
-        ["space", "time", "variable"]
-    ), "Expected coordinates to be space, time, variable"
+        ["space", "time", "original_variable"]
+    ), "Expected coordinates to be space, time, original_variable"
     if mock_data == "mock_era5_temperature":
         assert sorted(da.attrs["original_variables"]) == [
             "temperature"

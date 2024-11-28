@@ -252,7 +252,7 @@ def flatten_era5_variables(era5_ds: xr.Dataset) -> xr.DataArray:
         coords={
             "space": np.tile(stacked.coords["space"], len(variables)),
             "time": stacked.coords["time"],
-            "variable": ("space", variable_labels),
+            "original_variable": ("space", variable_labels),
         },
         attrs=era5_ds.attrs,
     )
