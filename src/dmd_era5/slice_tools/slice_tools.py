@@ -205,9 +205,12 @@ def apply_delay_embedding(X, d):
     )
 
 
-def flatten_era5_variables(era5_ds: xr.Dataset) -> tuple[np.ndarray, dict, list]:
+def flatten_era5_variables(era5_ds: xr.Dataset) -> xr.DataArray:
     """
-    Flatten the variables in an ERA5 dataset to a single two-dimensional NumPy array.
+    Flatten the variables in an ERA5 dataset to a single 2D array,
+    returned as a DataArray with dimensions (space, time). If there is more
+    than one variable in the dataset, spatial dimensions are stacked and
+    variables are concatenated along the first dimension (space).
 
     Parameters
     ----------
@@ -216,18 +219,10 @@ def flatten_era5_variables(era5_ds: xr.Dataset) -> tuple[np.ndarray, dict, list]
 
     Returns
     -------
-    np.ndarray
+    xr.DataArray
         The flattened array of variables, with shape (n_space * n_variables, n_time),
         where n_space = n_level * n_lat * n_lon. Variables are concatenated along the
         first dimension (space).
-    dict
-        A dictionary containing the coordinates of the flattened array, with keys
-        "level", "latitude", "longitude", and "time". "level", "latitude", and
-        "longitude" are 1D arrays with n_space elements, and "time" is a 1D array
-        with n_time elements.
-    list
-        A list of length n_variables, containing the names of the variables
-        in the order they appear in the flattened array.
     """
 
     variables: list[str] = list(map(str, era5_ds.data_vars.keys()))
@@ -244,12 +239,24 @@ def flatten_era5_variables(era5_ds: xr.Dataset) -> tuple[np.ndarray, dict, list]
 
     # create a list of variable arrays with shape (n_space, n_time)
     data_list = [stacked[var].transpose("space", "time").values for var in variables]
-    # concatenate the variable arrays along the space dimension
+    # concatenate the variable arrays along the space dimension,
+    # resulting in an array of shape (n_space * n_variables, n_time)
     data_combined = np.concatenate(data_list, axis=0)
 
-    # create a dictionary of the coordinates of the flattened array
-    flattened_coords = dict.fromkeys([*spatial_stack_order, "time"])
-    for coord in flattened_coords:
-        flattened_coords[coord] = stacked[coord].values
+    variable_labels = np.repeat(variables, stacked.coords["space"].shape[0])
 
-    return data_combined, flattened_coords, variables
+    # create a DataArray for the combined data
+    dataarray = xr.DataArray(
+        data_combined,
+        dims=("space", "time"),
+        coords={
+            "space": np.tile(stacked.coords["space"], len(variables)),
+            "time": stacked.coords["time"],
+            "variable": ("space", variable_labels),
+        },
+        attrs=era5_ds.attrs,
+    )
+    dataarray.attrs["original_variables"] = variables
+    dataarray.attrs["space_coords"] = spatial_stack_order
+
+    return dataarray
