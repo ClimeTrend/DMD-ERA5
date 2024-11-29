@@ -209,8 +209,10 @@ def flatten_era5_variables(era5_ds: xr.Dataset) -> xr.DataArray:
     """
     Flatten the variables in an ERA5 dataset to a single 2D array,
     returned as a DataArray with dimensions (space, time). If there is more
-    than one variable in the dataset, spatial dimensions are stacked and
-    variables are concatenated along the first dimension (space).
+    than one variable in the dataset, they are stacked along the space dimension.
+    In other words, the output array has shape (n_space * n_variables, n_time),
+    where the first n_space elements correspond to the first variable, the next
+    n_space elements correspond to the second variable, and so on.
 
     Parameters
     ----------
@@ -221,8 +223,10 @@ def flatten_era5_variables(era5_ds: xr.Dataset) -> xr.DataArray:
     -------
     xr.DataArray
         The flattened array of variables, with shape (n_space * n_variables, n_time),
-        where n_space = n_level * n_lat * n_lon. Variables are concatenated along the
-        first dimension (space).
+        where n_space = n_level * n_lat * n_lon. The DataArray has dimensions
+        (space, time), and coordinates "space", "time", and "original_variable".
+        "space" is a tuple of (level, latitude, longitude), and "original_variable"
+        is the original variable name.
     """
 
     variables: list[str] = list(map(str, era5_ds.data_vars.keys()))
