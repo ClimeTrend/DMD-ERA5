@@ -10,6 +10,7 @@ from dmd_era5.config_parser import config_parser
 from dmd_era5.config_reader import config_reader
 from dmd_era5.constants import (
     ERA5_PRESSURE_LEVEL_VARIABLES,
+    ERA5_PRESSURE_LEVELS,
     ERA5_SINGLE_LEVEL_VARIABLES,
     ERA5_VARIABLES,
 )
@@ -36,5 +37,6 @@ __all__ = [
     "ERA5_PRESSURE_LEVEL_VARIABLES",
     "ERA5_SINGLE_LEVEL_VARIABLES",
     "ERA5_VARIABLES",
+    "ERA5_PRESSURE_LEVELS",
 ]
 __version__ = version(__name__)

@@ -15,3 +15,20 @@ ERA5_SINGLE_LEVEL_VARIABLES: set[str] = {
 }
 
 ERA5_VARIABLES = ERA5_PRESSURE_LEVEL_VARIABLES.union(ERA5_SINGLE_LEVEL_VARIABLES)
+
+
+ERA5_PRESSURE_LEVELS: set[int] = {
+    50,
+    100,
+    150,
+    200,
+    250,
+    300,
+    400,
+    500,
+    600,
+    700,
+    850,
+    925,
+    1000,
+}
