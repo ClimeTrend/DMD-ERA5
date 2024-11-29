@@ -8,7 +8,7 @@ import pytest
 import xarray as xr
 
 from dmd_era5 import config_parser
-from dmd_era5.constants import ERA5_PRESSURE_LEVEL_VARIABLES
+from dmd_era5.constants import ERA5_PRESSURE_LEVEL_VARIABLES, ERA5_PRESSURE_LEVELS
 from dmd_era5.era5_download import download_era5_data
 
 
@@ -84,6 +84,7 @@ def test_config_parser_missing_field(base_config, field):
         ("1000,850,500", [1000, 850, 500]),
         ("1000", [1000]),
         (" 1000 , 850 ", [1000, 850]),
+        ("all", list(ERA5_PRESSURE_LEVELS)),
     ],
 )
 def test_config_parser_levels(base_config, levels, expected):
