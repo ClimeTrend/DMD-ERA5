@@ -16,12 +16,14 @@ pip install -v -e ".[dev]"    # -v for verbose, -e for editable, [dev] for dev d
 # Post setup
 
 You should prepare pre-commit, which will help you by checking that commits pass
-required checks:
+required checks.
+Pre-commit will have been installed as a dev dependency, so you can run:
 
 ```bash
-pip install pre-commit # or brew install pre-commit on macOS
-pre-commit install # this will install a pre-commit hook into the git repo
+pre-commit install
 ```
+
+This will install a pre-commit hook into the Git repo, which will run the checks with each Git commit.
 
 You can also/alternatively run `pre-commit run` (changes only) or
 `pre-commit run --all-files` to check even without installing the hook.
@@ -31,8 +33,22 @@ You can also/alternatively run `pre-commit run` (changes only) or
 Use pytest to run the unit checks:
 
 ```bash
-pytest
+pytest  # will run all tests but the ones marked as "docker"
 ```
+
+By default, this will skip the tests marked as "docker", which are Data Version Control (DVC) tests designed to run in a Docker container because they modify the environment. To run these tests, start Docker Desktop and then run:
+
+```bash
+source environment.sh  # set the environment variables
+make repo-docker-build  # build the Docker image for the repo
+make pytest-docker-build  # build the Docker image for the tests
+make pytest-docker-run  # run the tests marked as "docker" in the Docker container
+make pytest  # this is equivalent to just running `pytest`, i.e. it will run all tests but the ones marked as "docker"
+```
+
+If you make changes to the package, you will need to rebuild the Docker image for the repo before running the tests, but if you just make changes to the tests, you can just rebuild the Docker image for the tests, which is faster.
+
+If you don't have Docker Desktop installed, you can download it from [here](https://www.docker.com/products/docker-desktop).
 
 # Coverage
 
@@ -41,13 +57,3 @@ Use pytest-cov to generate coverage reports:
 ```bash
 pytest --cov=dmd_era5
 ```
-
-# Pre-commit
-
-This project uses pre-commit for all style checking. Install pre-commit and run:
-
-```bash
-pre-commit run -a
-```
-
-to check all files.

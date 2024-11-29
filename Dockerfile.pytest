@@ -1,0 +1,4 @@
+FROM dmd_era5
+WORKDIR /app
+COPY . /app
+CMD ["sh", "-c", "pytest -vra -m docker"]

@@ -20,7 +20,6 @@ def base_config():
         "delta_time": "1y",
         "variables": "all",
         "levels": "1000",
-        "save_name": "",
     }
 
 
@@ -67,7 +66,6 @@ def test_config_parser_basic(base_config):
         "delta_time",
         "variables",
         "levels",
-        "save_name",
     ],
 )
 def test_config_parser_missing_field(base_config, field):
@@ -113,22 +111,8 @@ def test_config_parser_variables(base_config, variables, expected):
     ), f"Expected variables to be {expected}, but got {parsed_config['variables']}"
 
 
-# --- Custom save_name
-@pytest.mark.parametrize(
-    "save_name", ["custom_name.nc", "era5_data.nc", "ERA5_data.nc"]
-)
-def test_config_parser_custom_save_name(base_config, save_name):
-    """Test the custom save_name."""
-    base_config["save_name"] = save_name
-    parsed_config = config_parser(base_config, section="era5-download")
-    assert (
-        parsed_config["save_name"] == save_name
-    ), f"Expected save_name to be {save_name}, but got {parsed_config['save_name']}"
-
-
 def test_config_parser_generate_save_name(base_config):
-    """Test that the save_name is correctly generated when left blank."""
-    base_config["save_name"] = ""  # Set save_name to an empty string
+    """Test that the save_name is correctly generated."""
     base_config["start_datetime"] = "2023-01-01"
     base_config["end_datetime"] = "2023-12-31"
     base_config["delta_time"] = "1d"
