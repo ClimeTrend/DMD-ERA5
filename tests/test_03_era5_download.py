@@ -96,6 +96,14 @@ def test_config_parser_levels(base_config, levels, expected):
     ), f"Expected levels to be {expected}, but got {parsed_config['levels']}"
 
 
+# Test the case where the levels are not valid
+def test_config_parser_levels_invalid(base_config):
+    """Test the levels field with an invalid value."""
+    base_config["levels"] = "965"
+    with pytest.raises(ValueError, match="Unsupported level"):
+        config_parser(base_config, section="era5-download")
+
+
 # --- Test the variables field
 @pytest.mark.parametrize(
     ("variables", "expected"),
