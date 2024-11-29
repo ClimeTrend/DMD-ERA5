@@ -73,9 +73,7 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
             full_era5_ds = create_mock_era5(
                 start_datetime=parsed_config["start_datetime"],
                 end_datetime=parsed_config["end_datetime"],
-                variables=parsed_config["variables"]
-                if parsed_config["variables"] != ["all"]
-                else ["temperature", "u_component_of_wind", "v_component_of_wind"],
+                variables=parsed_config["variables"],
                 levels=parsed_config["levels"],
             )
 
@@ -91,8 +89,7 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
             log_and_print(logger, "ERA5 loaded.")
 
             # Select the variables
-            if parsed_config["variables"] != ["all"]:
-                full_era5_ds = full_era5_ds[parsed_config["variables"]]
+            full_era5_ds = full_era5_ds[parsed_config["variables"]]
 
         # Selecting the time range and levels
         log_and_print(logger, "Slicing ERA5 Dataset...")
