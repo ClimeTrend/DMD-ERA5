@@ -125,6 +125,14 @@ def test_config_parser_variables(base_config, variables, expected):
     ), f"Expected variables to be {expected}, but got {parsed_config['variables']}"
 
 
+# Test the case where the variables are not valid
+def test_config_parser_variables_invalid(base_config):
+    """Test the variables field with an invalid value."""
+    base_config["variables"] = "temperature,wind"
+    with pytest.raises(ValueError, match="Unsupported variable"):
+        config_parser(base_config, section="era5-download")
+
+
 def test_config_parser_generate_save_name(base_config):
     """Test that the save_name is correctly generated."""
     base_config["start_datetime"] = "2023-01-01"
