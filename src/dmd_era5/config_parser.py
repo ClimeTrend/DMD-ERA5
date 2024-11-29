@@ -2,6 +2,11 @@ import os
 from datetime import datetime, timedelta
 from logging import Logger
 
+from dmd_era5.constants import (
+    ERA5_PRESSURE_LEVEL_VARIABLES,
+    ERA5_SINGLE_LEVEL_VARIABLES,
+)
+
 
 def validate_time_parameters(parsed_config: dict) -> None:
     """
@@ -123,12 +128,22 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
 
     # Parse the variables
     try:
-        if config["variables"] == "all":
-            parsed_config["variables"] = ["all"]
+        if config["variables"] == "all_pressure_level_vars":
+            parsed_config["variables"] = list(ERA5_PRESSURE_LEVEL_VARIABLES)
+        elif config["variables"] == "all_single_level_vars":
+            msg = "Single level variables not currently supported."
+            raise ValueError(msg)
         else:
             parsed_config["variables"] = [
                 v.strip() for v in config["variables"].split(",")
             ]
+            for var in parsed_config["variables"]:
+                if var in ERA5_SINGLE_LEVEL_VARIABLES:
+                    msg = f"Single level variables not currently supported: {var}"
+                    raise ValueError(msg)
+                if var not in ERA5_PRESSURE_LEVEL_VARIABLES:
+                    msg = f"Unsupported variable in config: {var}"
+                    raise ValueError(msg)
     except ValueError as e:
         msg = f"Error parsing variables from config: {e}"
         if logger is not None:
