@@ -223,7 +223,10 @@ def test_flatten_era5_variables_basic(mock_data, request):
 
 
 def test_flatten_era5_variables_array_dims(mock_era5_temperature_wind):
-    """Test the dimensions of the flattened data array."""
+    """
+    Test the dimensions of the flattened data array, and check that the data
+    is correctly flattened.
+    """
     da = flatten_era5_variables(mock_era5_temperature_wind)
 
     sizes = dict(mock_era5_temperature_wind.sizes)
@@ -238,3 +241,26 @@ def test_flatten_era5_variables_array_dims(mock_era5_temperature_wind):
         n_space * n_vars,
         n_time,
     ), "Expected flattened data shape to be (n_space * n_vars, n_time)"
+
+    # index a few spatial locations to check that the data is correctly flattened
+    lat_level_lon = [(1000, 40, 90), (1000, -20, -50), (850, 0, 0)]
+    for coord in lat_level_lon:
+        level, lat, lon = coord
+        temperature = da.sel(space=(level, lat, lon))
+        temperature = temperature.sel(
+            space=temperature.original_variable == "temperature"
+        ).values
+        wind = da.sel(space=(level, lat, lon))
+        wind = wind.sel(space=wind.original_variable == "u_component_of_wind").values
+        assert np.allclose(
+            temperature,
+            mock_era5_temperature_wind.temperature.sel(
+                level=level, latitude=lat, longitude=lon
+            ).values,
+        )
+        assert np.allclose(
+            wind,
+            mock_era5_temperature_wind.u_component_of_wind.sel(
+                level=level, latitude=lat, longitude=lon
+            ).values,
+        )
