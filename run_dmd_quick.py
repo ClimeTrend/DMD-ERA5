@@ -128,9 +128,14 @@ def run_dmd_analysis(ds, output_dir):
 
 
 if __name__ == "__main__":
-    # Path to your ERA5 data
-    data_path = "../data/era5_download/2019-01-01T00_2019-01-05T00_1h.nc"
-    output_dir = "../data/dmd_results"
+    # Get the current directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Path to your ERA5 data (adjust these paths based on your HPC structure)
+    data_path = os.path.join(
+        current_dir, "data", "era5_download", "2019-01-01T00_2019-01-05T00_1h.nc"
+    )
+    output_dir = os.path.join(current_dir, "data", "dmd_results")
 
     # Load data
     ds = xr.open_dataset(data_path)
