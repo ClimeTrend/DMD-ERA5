@@ -17,8 +17,11 @@ from dmd_era5.create_mock_data import create_mock_era5
 from dmd_era5.dvc_tools import add_data_to_dvc, retrieve_data_from_dvc
 from dmd_era5.era5_download import (
     add_config_attributes,
+)
+from dmd_era5.era5_download import (
     main as era5_download_main,
 )
+
 
 @pytest.fixture
 def base_config():
