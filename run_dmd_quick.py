@@ -56,7 +56,12 @@ def run_dmd_analysis(ds, output_dir):
         varpro_opts_dict={"verbose": True},
     )
     delay_optdmd = hankel_preprocessing(optdmd, d=delay)
-    delay_optdmd.fit(X_train, t=t_train)
+
+    # Adjust time vector for Hankel preprocessing
+    t_train_adjusted = t_train[delay - 1 :]
+
+    # Fit DMD with adjusted time vector
+    delay_optdmd.fit(X_train, t=t_train_adjusted)
 
     # 5. Get DMD components
     modes = delay_optdmd.modes
