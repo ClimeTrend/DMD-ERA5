@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 
 import xarray as xr
 
-from dmd_era5 import log_and_print, setup_logger
+from dmd_era5.core import log_and_print, setup_logger
 
 # Set up logger
 logger = setup_logger("ERA5Processing", "era5_processing.log")
