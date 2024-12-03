@@ -28,7 +28,7 @@ def base_config_era5_svd():
         "start_datetime": "2019-01-01T00",
         "end_datetime": "2020-01-01T00",
         "delta_time": "1y",
-        "variables": "all",
+        "variables": "all_pressure_level_vars",
         "levels": "1000",
         "svd_type": "randomized",
         "delay_embedding": 2,
