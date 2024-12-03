@@ -4,7 +4,7 @@ Tests for the create_mock_data module.
 
 import xarray as xr
 
-from dmd_era5.create_mock_data import create_mock_era5
+from dmd_era5 import create_mock_era5
 
 
 def test_create_mock_era5():

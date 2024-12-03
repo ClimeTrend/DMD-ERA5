@@ -7,7 +7,7 @@ import os
 import pytest
 from pyprojroot import here
 
-from dmd_era5.config_reader import config_reader
+from dmd_era5 import config_reader
 
 
 # ---- Fixtures ----

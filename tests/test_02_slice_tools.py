@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 import numpy as np
 import pytest
 
-from dmd_era5.create_mock_data import create_mock_era5
-from dmd_era5.slice_tools import (
+from dmd_era5 import (
     apply_delay_embedding,
+    create_mock_era5,
     flatten_era5_variables,
     resample_era5_dataset,
     slice_era5_dataset,
