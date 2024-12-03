@@ -12,7 +12,7 @@ from dvc.repo import Repo as DvcRepo
 from git import Repo as GitRepo
 from pyprojroot import here
 
-from dmd_era5.core import config_parser
+from dmd_era5 import config_parser
 from dmd_era5.create_mock_data import create_mock_era5
 from dmd_era5.dvc_tools import add_data_to_dvc, retrieve_data_from_dvc
 from dmd_era5.era5_download import (
