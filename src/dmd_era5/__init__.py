@@ -25,8 +25,8 @@ __all__ = [
     "slice_era5_dataset",
     "create_mock_era5",
     "standardize_data",
+    "config_parser",
     "add_data_to_dvc",
     "retrieve_data_from_dvc",
-    "config_parser",
 ]
 __version__ = version(__name__)

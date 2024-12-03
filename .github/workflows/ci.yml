@@ -66,6 +66,7 @@ jobs:
           dvc remote add -d dvc_local_remote dvc_local_remote
 
       - name: Test package
+        # note: the -m "" flag is used to run all tests, regardless of markers
         run: >-
           python -m pytest -m "" -ra --cov --cov-report=xml --cov-report=term
           --durations=20
