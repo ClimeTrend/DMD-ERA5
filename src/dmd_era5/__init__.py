@@ -11,12 +11,16 @@ from dmd_era5.create_mock_data import create_mock_era5
 from dmd_era5.dvc_tools import add_data_to_dvc, retrieve_data_from_dvc
 from dmd_era5.era5_download import download_era5_data
 from dmd_era5.slice_tools import (
+    apply_delay_embedding,
+    flatten_era5_variables,
     resample_era5_dataset,
     slice_era5_dataset,
     standardize_data,
 )
 
 __all__ = [
+    "apply_delay_embedding",
+    "flatten_era5_variables",
     "config_reader",
     "setup_logger",
     "log_and_print",
