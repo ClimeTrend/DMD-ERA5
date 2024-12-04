@@ -8,6 +8,7 @@ import pytest
 import xarray as xr
 
 from dmd_era5 import config_parser
+from dmd_era5.constants import ERA5_PRESSURE_LEVEL_VARIABLES, ERA5_PRESSURE_LEVELS
 from dmd_era5.era5_download import download_era5_data
 
 
@@ -18,7 +19,7 @@ def base_config():
         "start_datetime": "2019-01-01T00",
         "end_datetime": "2020-01-01T00",
         "delta_time": "1y",
-        "variables": "all",
+        "variables": "all_pressure_level_vars",
         "levels": "1000",
     }
 
@@ -41,9 +42,10 @@ def test_config_parser_basic(base_config):
     assert parsed_config["delta_time"] == timedelta(
         days=365
     ), f"delta_time should be {timedelta(hours=1)} not {parsed_config['delta_time']}"
-    assert parsed_config["variables"] == [
-        "all"
-    ], f"variables should be ['all'] not {parsed_config['variables']}"
+    assert parsed_config["variables"] == list(ERA5_PRESSURE_LEVEL_VARIABLES), f"""
+    variables should be {list(ERA5_PRESSURE_LEVEL_VARIABLES)}
+    not {parsed_config['variables']}
+    """
     assert parsed_config["levels"] == [
         1000
     ], f"levels should be [1000] not {parsed_config['levels']}"
@@ -82,6 +84,7 @@ def test_config_parser_missing_field(base_config, field):
         ("1000,850,500", [1000, 850, 500]),
         ("1000", [1000]),
         (" 1000 , 850 ", [1000, 850]),
+        ("all", list(ERA5_PRESSURE_LEVELS)),
     ],
 )
 def test_config_parser_levels(base_config, levels, expected):
@@ -93,13 +96,24 @@ def test_config_parser_levels(base_config, levels, expected):
     ), f"Expected levels to be {expected}, but got {parsed_config['levels']}"
 
 
+# Test the case where the levels are not valid
+def test_config_parser_levels_invalid(base_config):
+    """Test the levels field with an invalid value."""
+    base_config["levels"] = "965"
+    with pytest.raises(ValueError, match="Unsupported level"):
+        config_parser(base_config, section="era5-download")
+
+
 # --- Test the variables field
 @pytest.mark.parametrize(
     ("variables", "expected"),
     [
-        ("temperature,humidity,pressure", ["temperature", "humidity", "pressure"]),
-        ("all", ["all"]),
-        (" temperature , humidity ", ["temperature", "humidity"]),
+        (
+            "temperature,u_component_of_wind,v_component_of_wind",
+            ["temperature", "u_component_of_wind", "v_component_of_wind"],
+        ),
+        ("all_pressure_level_vars", list(ERA5_PRESSURE_LEVEL_VARIABLES)),
+        (" temperature , u_component_of_wind ", ["temperature", "u_component_of_wind"]),
     ],
 )
 def test_config_parser_variables(base_config, variables, expected):
@@ -109,6 +123,14 @@ def test_config_parser_variables(base_config, variables, expected):
     assert (
         parsed_config["variables"] == expected
     ), f"Expected variables to be {expected}, but got {parsed_config['variables']}"
+
+
+# Test the case where the variables are not valid
+def test_config_parser_variables_invalid(base_config):
+    """Test the variables field with an invalid value."""
+    base_config["variables"] = "temperature,wind"
+    with pytest.raises(ValueError, match="Unsupported variable"):
+        config_parser(base_config, section="era5-download")
 
 
 def test_config_parser_generate_save_name(base_config):

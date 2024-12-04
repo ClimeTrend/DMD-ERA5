@@ -50,7 +50,7 @@ def era5_data_config_a(base_config):
 def era5_data_config_b(base_config):
     config = base_config.copy()
     config["variables"] = "u_component_of_wind"
-    config["levels"] = "900"
+    config["levels"] = "850"
     return config
 
 
@@ -58,7 +58,7 @@ def era5_data_config_b(base_config):
 def era5_data_config_c(base_config):
     config = base_config.copy()
     config["variables"] = "temperature,v_component_of_wind"
-    config["levels"] = "800,700"
+    config["levels"] = "1000,925"
     return config
 
 
@@ -297,8 +297,8 @@ def test_main_era5_download(config, request):
                 data_vars[0] == "u_component_of_wind"
             ), "The data should contain u-wind data"
             assert (
-                levels[0] == 900
-            ), "The data should contain data at pressure level 900"
+                levels[0] == 850
+            ), "The data should contain data at pressure level 850"
 
         # Git restore the DVC file, which will have been checked out
         # by when retrieving data from DVC. The DVC log should not be changed.
@@ -369,4 +369,4 @@ def test_dvc_retrieval_from_remote(era5_data_config_b):
     data.close()
 
     assert sorted(data_vars) == ["u_component_of_wind"]
-    assert sorted(levels) == [900]
+    assert sorted(levels) == [850]
