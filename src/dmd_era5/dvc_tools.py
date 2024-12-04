@@ -131,7 +131,7 @@ def retrieve_data_from_dvc(
     Args:
         parsed_config (dict): The parsed configuration.
         data_type (str): The type of data to retrieve.
-            Currently only "era5_slice" is supported.
+            Currently only "era5_slice" and "era5_svd" are supported.
     """
     log_file_path = parsed_config["save_path"] + ".yaml"
     dvc_file_path = parsed_config["save_path"] + ".dvc"
@@ -162,8 +162,26 @@ def retrieve_data_from_dvc(
                 if date_downloaded > date_downloaded_keep:
                     md5_hash_keep = md5_hash
                     date_downloaded_keep = date_downloaded
+    elif data_type == "era5_svd":
+        for md5_hash, metadata in log_file_content.items():
+            if (
+                parsed_config["source_path"] == metadata["source_path"]
+                and parsed_config["variables"] == metadata["variables"]
+                and parsed_config["levels"] == metadata["levels"]
+                and parsed_config["delay_embedding"] == metadata["delay_embedding"]
+                and parsed_config["mean_center"] == metadata["mean_center"]
+                and parsed_config["scale"] == metadata["scale"]
+                and parsed_config["n_components"] == metadata["n_components"]
+            ):
+                date_downloaded = metadata["date_downloaded"]
+                if date_downloaded > date_downloaded_keep:
+                    md5_hash_keep = md5_hash
+                    date_downloaded_keep = date_downloaded
     else:
-        msg = "Data type not supported."
+        msg = """
+        Data type not supported.
+        Currently only 'era5_slice' and 'era5_svd' are supported.
+        """
         raise ValueError(msg)
 
     if md5_hash_keep:
