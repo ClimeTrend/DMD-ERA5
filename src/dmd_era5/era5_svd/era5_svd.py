@@ -1,9 +1,15 @@
 import logging
 import sys
 
+import numpy as np
 import xarray as xr
+from sklearn.utils.extmath import randomized_svd
 
-from dmd_era5 import config_reader, log_and_print, setup_logger, slice_era5_dataset
+from dmd_era5 import (
+    config_reader,
+    log_and_print,
+    setup_logger,
+)
 
 config = config_reader("era5-svd")
 logger = setup_logger("ERA5-SVD", "era5_svd.log")
@@ -15,40 +21,40 @@ console_handler.setFormatter(
 logger.addHandler(console_handler)
 
 
-def svd_on_era5(parsed_config: dict, mock_era5: xr.Dataset | None = None):
+def svd_on_era5(
+    da: xr.DataArray, parsed_config: dict
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Perform Singular Value Decomposition (SVD) on the ERA5 data.
+    Perform Singular Value Decomposition (SVD) on the pre-processed ERA5 slice.
 
     Args:
-        parsed_config (dict): Parsed configuration dictionary with
-            the configuration parameters.
-        mock_era5 (xarray.Dataset): Mock ERA5 data for testing purposes.
+        da (xr.DataArray): The pre-processed ERA5 slice.
+        parsed_config (dict): The parsed configuration dictionary.
 
     Returns:
+        tuple[np.ndarray, np.ndarray, np.ndarray]: The SVD results U, s, and V,
+        where U and V are the left and right singular vectors, respectively,
+        and s is the singular values. U has shape (n_samples, n_components),
+        s has shape (n_components,), and V has shape (n_components, n_features).
     """
-
-    if mock_era5 is None:
-        try:
-            log_and_print(
-                logger, f"Opening ERA5 file: {parsed_config['file_path']} ..."
-            )
-            era5_data = xr.open_dataset(parsed_config["file_path"])
-        except Exception as e:
-            msg = f"Error opening requested ERA5 file: {e}"
-            log_and_print(logger, msg, level="error")
-            raise ValueError(msg) from e
+    X = da.values
+    svd_type = parsed_config["svd_type"]
+    n_components = parsed_config["n_components"]
+    if svd_type == "standard":
+        log_and_print(logger, "Performing standard SVD...")
+        U, s, V = np.linalg.svd(X, full_matrices=False)
+        U = U[:, :n_components]
+        s = s[:n_components]
+        V = V[:n_components, :]
+        log_and_print(logger, "Standard SVD complete.")
+    elif parsed_config["svd_type"] == "randomized":
+        log_and_print(logger, "Performing randomized SVD...")
+        U, s, V = randomized_svd(X, n_components=n_components)
+        log_and_print(logger, "Randomized SVD complete.")
     else:
-        era5_data = mock_era5
-
-    try:
-        log_and_print(logger, "Slicing ERA5 data...")
-        era5_data = slice_era5_dataset(
-            era5_data, parsed_config["start_datetime"], parsed_config["end_datetime"]
-        )
-    except Exception as e:
-        msg = f"Error slicing ERA5 data: {e}"
-        log_and_print(logger, msg, level="error")
-        raise Exception(msg) from e
+        msg = f"SVD type {svd_type} is not supported."
+        raise ValueError(msg)
+    return U, s, V
 
 
 def main(
@@ -75,3 +81,7 @@ def main(
         tuple[bool, bool]: A tuple of two booleans indicating whether the SVD results
         were added to DVC and whether they were retrieved from DVC.
     """
+    added_to_dvc = False
+    retrieved_from_dvc = False
+
+    return added_to_dvc, retrieved_from_dvc
