@@ -173,36 +173,73 @@ def standardize_data(
     return data
 
 
-def apply_delay_embedding(X, d):
+def apply_delay_embedding(
+    X: xr.DataArray | np.ndarray, d: int
+) -> xr.DataArray | np.ndarray:
     """
     Apply delay embedding to temporal snapshots.
 
     Parameters
     ----------
-    X : np.ndarray
+    X : xr.DataArray or np.ndarray
         The input data array of shape (n_space * n_variables, n_time).
+        If X is a DataArray, the dimensions must be ("space", "time") and
+        the coordinates must include "space", "time" and "original_variable".
     d : int
         The number of snapshots from X to include in each snapshot of the output.
 
     Returns
     -------
-    np.ndarray
+    xr.DataArray or np.ndarray
         The delay-embedded data array of shape
         (n_space * n_variables * d, n_time - d + 1).
+        If X is a DataArray, the output is also a DataArray with dimensions
+        ("space", "time") and coordinates "space", "time", "original_variable"
+        and "delay". "delay" is the delay index for each space coordinate, e.g.
+        for d=2, the delay indices are [0, 0, ..., 0, 0, 1, 1, ..., 1, 1], where
+        0 means no delay and 1 means a delay of 1 snapshot ahead.
+        If X is a NumPy array, the output is a NumPy array.
     """
+
+    def apply_delay_embedding_np(X, d):
+        return (
+            sliding_window_view(X.T, (d, X.shape[0]))[:, 0]
+            .reshape(X.shape[1] - d + 1, -1)
+            .T
+        )
 
     if X.ndim != 2:
         msg = "Input array must be 2D."
         raise ValueError(msg)
+
     if not isinstance(d, int) or d <= 0:
         msg = "Delay must be an integer greater than 0."
         raise ValueError(msg)
 
-    return (
-        sliding_window_view(X.T, (d, X.shape[0]))[:, 0]
-        .reshape(X.shape[1] - d + 1, -1)
-        .T
-    )
+    if isinstance(X, np.ndarray):
+        return apply_delay_embedding_np(X, d)
+
+    if isinstance(X, xr.DataArray):
+        result = apply_delay_embedding_np(X.values, d)
+        dataarray = xr.DataArray(
+            result,
+            dims=("space", "time"),
+            coords={
+                "space": np.tile(X.coords["space"], d),
+                "time": X.coords["time"][: -d + 1],
+                "original_variable": (
+                    "space",
+                    np.tile(X.coords["original_variable"], d),
+                ),
+                "delay": ("space", np.repeat(np.arange(d), X.coords["space"].shape[0])),
+            },
+            attrs=X.attrs,
+        )
+        dataarray.attrs["delay_embedding"] = d
+        return dataarray
+
+    msg = "Input must be a DataArray or NumPy array."
+    raise ValueError(msg)
 
 
 def flatten_era5_variables(era5_ds: xr.Dataset) -> xr.DataArray:
