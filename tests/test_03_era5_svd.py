@@ -105,8 +105,7 @@ def test_config_parser_invalid_n_components(base_config, n_components):
 
 @pytest.mark.skip(
     reason="""
-    apply_delay_embedding currently returning NumPy array,
-    need to retunrn xarray
+    working, but SVD step is slow at the moment.
     """
 )
 def test_svd_on_era5(base_config, mock_era5):
