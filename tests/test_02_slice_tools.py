@@ -291,42 +291,62 @@ def test_apply_delay_embedding_dataarray(mock_era5_temperature_wind, d):
     assert sorted(da_delay.coords) == sorted(
         ["space", "time", "original_variable", "delay"]
     ), "Expected coordinates to be space, time, original_variable, delay"
-    assert da_delay.shape[0] == da_flatten.shape[0] * d, """
-    Expected space dimension to be multiplied by delay.
+    assert (
+        da_delay.shape[0] == da_flatten.shape[0] * d
+    ), "Expected space dimension to be multiplied by delay."
+    assert (
+        da_delay.shape[1] == da_flatten.shape[1] - d + 1
+    ), "Expected time dimension to be reduced by delay-1."
+
+
+@pytest.mark.dependency(
+    name="test_apply_delay_embedding_dataarray_coordinates",
+    depends=["test_apply_delay_embedding_dataarray"],
+)
+@pytest.mark.parametrize("d", [2, 3])
+def test_apply_delay_embedding_dataarray_coordinates(mock_era5_temperature_wind, d):
     """
-    assert da_delay.shape[1] == da_flatten.shape[1] - d + 1, """
-    Expected time dimension to be reduced by delay-1.
+    Test the coordinates of the DataArray after applying delay embedding.
     """
+
+    da_flatten = flatten_era5_variables(mock_era5_temperature_wind)
+    da_delay = apply_delay_embedding(da_flatten, d=d)
 
     # Check the coordinates
     n_space = da_flatten.sizes["space"]
     for coord in ["space", "original_variable"]:
         assert all(
             da_delay.coords[coord].values[:n_space] == da_flatten.coords[coord].values
-        ), f"""
-        Expected coordinate {coord} to be the same.
-        """
+        ), f"Expected coordinate {coord} to be the same."
         assert all(
             da_delay.coords[coord].values[n_space : n_space * 2]
             == da_flatten.coords[coord].values
-        ), f"""
-        Expected coordinate {coord} to be the same.
-        """
+        ), f"Expected coordinate {coord} to be the same."
         if d == 3:
             assert all(
                 da_delay.coords[coord].values[n_space * 2 :]
                 == da_flatten.coords[coord].values
-            ), f"""
-            Expected coordinate {coord} to be the same.
-            """
-    assert all(np.unique(da_delay.coords["delay"].values) == np.arange(d)), f"""
-    Expected delay coordinate to be {np.arange(d)}.
-    """
+            ), f"Expected coordinate {coord} to be the same."
+    assert all(
+        np.unique(da_delay.coords["delay"].values) == np.arange(d)
+    ), f"Expected delay coordinate to be {np.arange(d)}."
     assert all(
         da_delay.coords["time"].values == da_flatten.coords["time"].values[d - 1 :]
-    ), """
-    Expected time coordinate to be shifted by delay-1.
+    ), "Expected time coordinate to be shifted by delay-1."
+
+
+@pytest.mark.dependency(
+    name="test_apply_delay_embedding_dataarray_values",
+    depends=["test_apply_delay_embedding_dataarray_coordinates"],
+)
+@pytest.mark.parametrize("d", [2, 3])
+def test_apply_delay_embedding_dataarray_values(mock_era5_temperature_wind, d):
     """
+    Test the values of the DataArray after applying delay embedding.
+    """
+
+    da_flatten = flatten_era5_variables(mock_era5_temperature_wind)
+    da_delay = apply_delay_embedding(da_flatten, d=d)
 
     # Index a few spatial locations to check that the data is correctly delayed
     lat_level_lon = [(1000, 40, 90), (1000, -20, -50), (850, 0, 0)]
