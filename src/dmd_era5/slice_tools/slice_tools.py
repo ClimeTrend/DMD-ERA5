@@ -196,9 +196,9 @@ def apply_delay_embedding(
         If X is a DataArray, the output is also a DataArray with dimensions
         ("space", "time") and coordinates "space", "time", "original_variable"
         and "delay". "delay" is the delay index for each space coordinate, e.g.
-        for d=2, the delay indices are [0, 0, ..., 0, 0, 1, 1, ..., 1, 1], where
-        0 means no delay and 1 means a delay of 1 snapshot ahead.
-        If X is a NumPy array, the output is a NumPy array.
+        for d=2, the delay indices are [1, 1, ..., 0, 0, ...], where a value of
+        1 indicates one snapshot delay relative to the time coordinate, and 0
+        indicates no delay.
     """
 
     def apply_delay_embedding_np(X, d):
@@ -226,12 +226,15 @@ def apply_delay_embedding(
             dims=("space", "time"),
             coords={
                 "space": np.tile(X.coords["space"], d),
-                "time": X.coords["time"][: -d + 1],
+                "time": X.coords["time"][d - 1 :],
                 "original_variable": (
                     "space",
                     np.tile(X.coords["original_variable"], d),
                 ),
-                "delay": ("space", np.repeat(np.arange(d), X.coords["space"].shape[0])),
+                "delay": (
+                    "space",
+                    np.repeat(np.flip(np.arange(d)), X.coords["space"].shape[0]),
+                ),
             },
             attrs=X.attrs,
         )

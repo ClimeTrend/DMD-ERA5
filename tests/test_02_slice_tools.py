@@ -312,7 +312,45 @@ def test_apply_delay_embedding_dataarray(mock_era5_temperature_wind):
     Expected delay coordinate to be {np.arange(d)}.
     """
     assert all(
-        da_delay.coords["time"].values == da_flatten.coords["time"].values[: -d + 1]
+        da_delay.coords["time"].values == da_flatten.coords["time"].values[d - 1 :]
     ), """
-    Expected time coordinate to be shortened by delay-1.
+    Expected time coordinate to be shifted by delay-1.
     """
+
+    # Index a few spatial locations to check that the data is correctly delayed
+    lat_level_lon = [(1000, 40, 90), (1000, -20, -50), (850, 0, 0)]
+    for var in da_flatten.attrs["original_variables"]:
+        for coord in lat_level_lon:
+            level, lat, lon = coord
+            variable_delay = da_delay.sel(space=(level, lat, lon))
+            variable_delay = variable_delay.sel(
+                space=variable_delay.original_variable == var
+            )
+            variable_delay_0 = np.squeeze(
+                variable_delay.sel(space=variable_delay.delay == 0).values
+            )
+            variable_delay_1 = np.squeeze(
+                variable_delay.sel(space=variable_delay.delay == 1).values
+            )
+
+            variable_flatten = da_flatten.sel(space=(level, lat, lon))
+            variable_flatten = np.squeeze(
+                variable_flatten.sel(
+                    space=variable_flatten.original_variable == var
+                ).values
+            )
+
+            assert np.allclose(
+                variable_delay_0,
+                variable_flatten[1:],
+            ), """
+            Expected delay 0 to be the same as the original data
+            shifted by 1 time step
+            """
+            assert np.allclose(
+                variable_delay_1,
+                variable_flatten[:-1],
+            ), """
+            Expected delay 1 to be the same as the original data
+            shortened by 1 time step
+            """
