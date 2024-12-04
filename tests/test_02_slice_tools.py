@@ -272,11 +272,14 @@ def test_flatten_era5_variables_array_dims(mock_era5_temperature_wind):
     name="test_apply_delay_embedding_dataarray",
     depends=["test_flatten_era5_variables_array_dims"],
 )
-def test_apply_delay_embedding_dataarray(mock_era5_temperature_wind):
-    """Test the apply_delay_embedding function with a DataArray."""
+@pytest.mark.parametrize("d", [2, 3])
+def test_apply_delay_embedding_dataarray(mock_era5_temperature_wind, d):
+    """
+    Test the apply_delay_embedding function with a DataArray with
+    different delays.
+    """
 
     da_flatten = flatten_era5_variables(mock_era5_temperature_wind)
-    d = 2
     da_delay = apply_delay_embedding(da_flatten, d=d)
     assert isinstance(da_delay, xr.DataArray), "Expected output to be a DataArray"
 
@@ -304,10 +307,18 @@ def test_apply_delay_embedding_dataarray(mock_era5_temperature_wind):
         Expected coordinate {coord} to be the same.
         """
         assert all(
-            da_delay.coords[coord].values[n_space:] == da_flatten.coords[coord].values
+            da_delay.coords[coord].values[n_space : n_space * 2]
+            == da_flatten.coords[coord].values
         ), f"""
         Expected coordinate {coord} to be the same.
         """
+        if d == 3:
+            assert all(
+                da_delay.coords[coord].values[n_space * 2 :]
+                == da_flatten.coords[coord].values
+            ), f"""
+            Expected coordinate {coord} to be the same.
+            """
     assert all(np.unique(da_delay.coords["delay"].values) == np.arange(d)), f"""
     Expected delay coordinate to be {np.arange(d)}.
     """
@@ -332,6 +343,10 @@ def test_apply_delay_embedding_dataarray(mock_era5_temperature_wind):
             variable_delay_1 = np.squeeze(
                 variable_delay.sel(space=variable_delay.delay == 1).values
             )
+            if d == 3:
+                variable_delay_2 = np.squeeze(
+                    variable_delay.sel(space=variable_delay.delay == 2).values
+                )
 
             variable_flatten = da_flatten.sel(space=(level, lat, lon))
             variable_flatten = np.squeeze(
@@ -342,15 +357,23 @@ def test_apply_delay_embedding_dataarray(mock_era5_temperature_wind):
 
             assert np.allclose(
                 variable_delay_0,
-                variable_flatten[1:],
+                variable_flatten[d - 1 :],
             ), """
             Expected delay 0 to be the same as the original data
             shifted by 1 time step
             """
             assert np.allclose(
                 variable_delay_1,
-                variable_flatten[:-1],
+                variable_flatten[d - 2 : -1],
             ), """
             Expected delay 1 to be the same as the original data
-            shortened by 1 time step
+            shifted by 2 time steps
             """
+            if d == 3:
+                assert np.allclose(
+                    variable_delay_2,
+                    variable_flatten[d - 3 : -2],
+                ), """
+                Expected delay 2 to be the same as the original data
+                shifted by 3 time steps
+                """
