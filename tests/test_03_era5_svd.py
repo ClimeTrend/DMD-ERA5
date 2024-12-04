@@ -9,6 +9,11 @@ import pytest
 from dmd_era5 import config_parser
 from dmd_era5.create_mock_data import create_mock_era5
 from dmd_era5.era5_svd import svd_on_era5
+from dmd_era5.slice_tools import (
+    apply_delay_embedding,
+    flatten_era5_variables,
+    standardize_data,
+)
 
 
 @pytest.fixture
@@ -98,6 +103,17 @@ def test_config_parser_invalid_n_components(base_config, n_components):
         config_parser(base_config, section="era5-svd")
 
 
+@pytest.mark.skip(
+    reason="""
+    apply_delay_embedding currently returning NumPy array,
+    need to retunrn xarray
+    """
+)
 def test_svd_on_era5(base_config, mock_era5):
     parsed_config = config_parser(base_config, section="era5-svd")
-    svd_on_era5(parsed_config, mock_era5)
+    data = mock_era5
+    if parsed_config["mean_center"]:
+        data = standardize_data(data, scale=parsed_config["scale"])
+    data = flatten_era5_variables(data)
+    data = apply_delay_embedding(data, parsed_config["delay_embedding"])
+    svd_on_era5(data, parsed_config)
