@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from dmd_era5 import (
     apply_delay_embedding,
@@ -222,6 +223,7 @@ def test_flatten_era5_variables_basic(mock_data, request):
         ], "Expected variables to be temperature and u_component_of_wind"
 
 
+@pytest.mark.dependency(name="test_flatten_era5_variables_array_dims")
 def test_flatten_era5_variables_array_dims(mock_era5_temperature_wind):
     """
     Test the dimensions of the flattened data array, and check that the data
@@ -264,3 +266,53 @@ def test_flatten_era5_variables_array_dims(mock_era5_temperature_wind):
                 level=level, latitude=lat, longitude=lon
             ).values,
         )
+
+
+@pytest.mark.dependency(
+    name="test_apply_delay_embedding_dataarray",
+    depends=["test_flatten_era5_variables_array_dims"],
+)
+def test_apply_delay_embedding_dataarray(mock_era5_temperature_wind):
+    """Test the apply_delay_embedding function with a DataArray."""
+
+    da_flatten = flatten_era5_variables(mock_era5_temperature_wind)
+    d = 2
+    da_delay = apply_delay_embedding(da_flatten, d=d)
+    assert isinstance(da_delay, xr.DataArray), "Expected output to be a DataArray"
+
+    # Check the dimensions
+    assert da_delay.ndim == 2, "Expected 2D data array"
+    assert sorted(da_delay.dims) == sorted(
+        ["space", "time"]
+    ), "Expected data dimensions to be space, time"
+    assert sorted(da_delay.coords) == sorted(
+        ["space", "time", "original_variable", "delay"]
+    ), "Expected coordinates to be space, time, original_variable, delay"
+    assert da_delay.shape[0] == da_flatten.shape[0] * d, """
+    Expected space dimension to be multiplied by delay.
+    """
+    assert da_delay.shape[1] == da_flatten.shape[1] - d + 1, """
+    Expected time dimension to be reduced by delay-1.
+    """
+
+    # Check the coordinates
+    n_space = da_flatten.sizes["space"]
+    for coord in ["space", "original_variable"]:
+        assert all(
+            da_delay.coords[coord].values[:n_space] == da_flatten.coords[coord].values
+        ), f"""
+        Expected coordinate {coord} to be the same.
+        """
+        assert all(
+            da_delay.coords[coord].values[n_space:] == da_flatten.coords[coord].values
+        ), f"""
+        Expected coordinate {coord} to be the same.
+        """
+    assert all(np.unique(da_delay.coords["delay"].values) == np.arange(d)), f"""
+    Expected delay coordinate to be {np.arange(d)}.
+    """
+    assert all(
+        da_delay.coords["time"].values == da_flatten.coords["time"].values[: -d + 1]
+    ), """
+    Expected time coordinate to be shortened by delay-1.
+    """
