@@ -16,7 +16,7 @@ def base_config():
         "start_datetime": "2019-01-01T00",
         "end_datetime": "2020-01-01T00",
         "delta_time": "1y",
-        "variables": "all",
+        "variables": "all_pressure_level_vars",
         "levels": "1000",
         "save_name": "",
     }
