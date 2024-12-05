@@ -123,4 +123,10 @@ def test_svd_on_era5(base_config, mock_era5_small, svd_type):
         data = standardize_data(data, scale=parsed_config["scale"])
     data = flatten_era5_variables(data)
     data = apply_delay_embedding(data, parsed_config["delay_embedding"])
-    svd_on_era5(data, parsed_config)
+    U, s, V = svd_on_era5(data, parsed_config)
+    n_samples = data.shape[0]
+    n_features = data.shape[1]
+    n_components = parsed_config["n_components"]
+    assert U.shape == (n_samples, n_components)
+    assert s.shape == (n_components,)
+    assert V.shape == (n_components, n_features)
