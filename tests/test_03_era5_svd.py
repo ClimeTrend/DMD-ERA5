@@ -43,6 +43,16 @@ def mock_era5():
     )
 
 
+@pytest.fixture
+def mock_era5_small():
+    return create_mock_era5(
+        start_datetime="2019-01-01",
+        end_datetime="2019-01-02",
+        variables=["temperature"],
+        levels=[1000],
+    )
+
+
 def test_config_parser_basic(base_config):
     parsed_config = config_parser(base_config, section="era5-svd")
     assert isinstance(parsed_config, dict)
@@ -103,14 +113,12 @@ def test_config_parser_invalid_n_components(base_config, n_components):
         config_parser(base_config, section="era5-svd")
 
 
-@pytest.mark.skip(
-    reason="""
-    working, but SVD step is slow at the moment.
-    """
-)
-def test_svd_on_era5(base_config, mock_era5):
+@pytest.mark.parametrize("svd_type", ["standard", "randomized"])
+def test_svd_on_era5(base_config, mock_era5_small, svd_type):
+    config = base_config.copy()
+    data = mock_era5_small
+    config["svd_type"] = svd_type
     parsed_config = config_parser(base_config, section="era5-svd")
-    data = mock_era5
     if parsed_config["mean_center"]:
         data = standardize_data(data, scale=parsed_config["scale"])
     data = flatten_era5_variables(data)
