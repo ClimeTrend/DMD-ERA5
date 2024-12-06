@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 import pytest
 
 from dmd_era5 import config_parser
-from dmd_era5.create_mock_data import create_mock_era5
-from dmd_era5.era5_svd import svd_on_era5
+from dmd_era5.create_mock_data import create_mock_era5, create_mock_era5_svd
+from dmd_era5.era5_svd import combine_svd_results, svd_on_era5
 from dmd_era5.slice_tools import (
     apply_delay_embedding,
     flatten_era5_variables,
@@ -50,6 +50,17 @@ def mock_era5_small():
         end_datetime="2019-01-02",
         variables=["temperature"],
         levels=[1000],
+    )
+
+
+@pytest.fixture
+def mock_era5_svd():
+    return create_mock_era5_svd(
+        start_datetime="2019-01-01",
+        end_datetime="2019-01-02",
+        variables=["temperature"],
+        levels=[1000],
+        n_components=6,
     )
 
 
@@ -131,3 +142,9 @@ def test_svd_on_era5(base_config, mock_era5_small, svd_type):
     assert U.shape == (n_samples, n_components)
     assert s.shape == (n_components,)
     assert V.shape == (n_components, n_features)
+
+
+def test_combine_svd_results(mock_era5_svd):
+    """Test the combine_svd_results function."""
+    U, s, V, coords = mock_era5_svd
+    combine_svd_results(U, s, V, coords)

@@ -83,8 +83,8 @@ def combine_svd_results(
         coords={
             "space": coords["space"],
             "components": np.arange(U.shape[1]),
-            "original_variable": ("space", coords["original_variable"]),
-            "delay": ("space", coords["delay"]),
+            "original_variable": ("space", coords["original_variable"].data),
+            "delay": ("space", coords["delay"].data),
         },
     )
     s_da = xr.DataArray(
