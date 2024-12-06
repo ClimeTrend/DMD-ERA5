@@ -162,3 +162,14 @@ def test_combine_svd_results(mock_era5_svd):
     assert sorted(da.V.dims) == sorted(["components", "time"]), """
     Expected V to have dims ('components', 'time')
     """
+    assert sorted(da.U.coords.keys()) == sorted(
+        ["space", "components", "original_variable", "delay"]
+    ), """
+    Expected U to have coords ['space', 'components', 'original_variable', 'delay']
+    """
+    assert sorted(da.s.coords.keys()) == sorted(["components"]), """
+    Expected s to have coords ['components']
+    """
+    assert sorted(da.V.coords.keys()) == sorted(["components", "time"]), """
+    Expected V to have coords ['components', 'time']
+    """
