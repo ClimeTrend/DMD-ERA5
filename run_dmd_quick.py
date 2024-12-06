@@ -100,14 +100,28 @@ def run_dmd_analysis(ds, output_dir):
     eigs = delay_optdmd.eigs
     amplitudes = delay_optdmd.amplitudes
 
-    # 6. Create time vector and compute DMD solution
+    # Get spatial dimensions
+    n_spatial = X.shape[0]
+
+    print("\nShape diagnostics:")
+    print(f"Original X shape: {X.shape}")
+    print(f"Modes shape: {modes.shape}")
+    print(f"X_mean shape: {X_mean.shape}")
+    print(f"X_std shape: {X_std.shape}")
+
+    # Create time vector and compute DMD solution
     n_points = X.shape[1]
     t_eval = np.arange(n_points) * (t[1] - t[0])  # Use actual time step
 
+    # Compute DMD reconstruction
     vander = np.vander(eigs, n_points, increasing=True)
     X_dmd_normalized = (modes @ np.diag(amplitudes) @ vander).T
-    n_spatial = X.shape[0]
-    X_dmd = (X_dmd_normalized * X_std.T[:n_spatial]) + X_mean.T[:n_spatial]
+
+    # Reshape X_dmd_normalized to match original spatial dimensions
+    X_dmd_normalized = X_dmd_normalized[:, :n_spatial]
+
+    # Now denormalize
+    X_dmd = (X_dmd_normalized * X_std.T) + X_mean.T
 
     # 7. Reshape and compute spatial means
     n_spatial = X.shape[0]
