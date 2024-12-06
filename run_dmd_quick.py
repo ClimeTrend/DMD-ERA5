@@ -53,7 +53,15 @@ def run_dmd_analysis(ds, output_dir):
     # Get spatial dimensions
     lats = ds.latitude.values
     lons = ds.longitude.values
+    n_lat = len(lats)
+    n_lon = len(lons)
     weights = np.cos(np.deg2rad(lats))
+
+    # Print dimensions for verification
+    print("\nSpatial dimensions:")
+    print(f"n_lat: {n_lat}")
+    print(f"n_lon: {n_lon}")
+    print(f"Total spatial points: {n_lat * n_lon}")
 
     # 2. Set up train/test split
     train_frac = 0.8
@@ -91,6 +99,12 @@ def run_dmd_analysis(ds, output_dir):
     )
     delay_optdmd = hankel_preprocessing(optdmd, d=delay)
 
+    # Continue with shape diagnostics
+    print("\nShape diagnostics:")
+    print(f"Original X shape: {X.shape}")
+    print(f"X_mean shape: {X_train_mean.shape}")
+    print(f"X_std shape: {X_train_std.shape}")
+
     # Adjust time vector for Hankel preprocessing
     t_train_adjusted = t_train[delay - 1 :]
 
@@ -114,6 +128,7 @@ def run_dmd_analysis(ds, output_dir):
     # Training period reconstruction
     vander_train = np.vander(eigs, T_train, increasing=True)
     X_dmd_train_normalized = (modes @ np.diag(amplitudes) @ vander_train).T
+    print(f"X_dmd_train_normalized shape: {X_dmd_train_normalized.shape}")
     X_dmd_train_normalized = X_dmd_train_normalized[:, :n_spatial]
     X_dmd_train = (X_dmd_train_normalized * X_train_std.T) + X_train_mean.T
 
@@ -126,14 +141,17 @@ def run_dmd_analysis(ds, output_dir):
     # Combine results
     X_dmd = np.concatenate([X_dmd_train, X_dmd_test], axis=0)
 
-    # Get spatial dimensions
-    n_spatial = X.shape[0]
-    n_time = X.shape[1]
-    n_lat = len(lats)
-    n_lon = len(lons)
+    # Ensure X_dmd has the correct shape before reshaping
+    print(f"X_dmd shape before reshape: {X_dmd.shape}")
+    # Transpose if needed to match original orientation
+    if X_dmd.shape[1] == n_spatial:
+        X_dmd = X_dmd.T
+    print(f"X_dmd final shape: {X_dmd.shape}")
+    print(f"Expected spatial points: {n_lat * n_lon}")
 
-    # Ensure correct dimensions
-    X_dmd = X_dmd[:n_time, :n_spatial].T
+    # Now reshape
+    X_dmd_spatial = X_dmd.reshape(-1, n_lat, n_lon)
+    print(f"X_dmd_spatial shape: {X_dmd_spatial.shape}")
 
     # 7. Reshape and compute spatial means
     n_spatial = X.shape[0]
