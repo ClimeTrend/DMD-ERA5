@@ -37,8 +37,8 @@ def run_dmd_analysis(ds, output_dir):
     print(f"Temperature range: {temp_data.min().values} to {temp_data.max().values} K")
     print(f"Temperature standard deviation: {temp_data.std().values} K")
 
-    # After reshaping, check X matrix
-    X = temp_data.values.reshape(temp_data.shape[0], -1).T  # Reshape to (space, time)
+    # Reshape to (space, time)
+    X = temp_data.values.reshape(temp_data.shape[0], -1).T
     print(f"X matrix range: {X.min()} to {X.max()}")
     print(f"X matrix standard deviation: {X.std()}")
 
@@ -50,32 +50,32 @@ def run_dmd_analysis(ds, output_dir):
     print(f"Number of days: {len(t)/24}")
     print(f"Number of total spatial points: {X.shape[0]}")
 
-    # Get spatial dimensions
-    lats = ds.latitude.values
-    lons = ds.longitude.values
-    weights = np.cos(np.deg2rad(lats))
-
-    # 2. Set up train/test split
+    # 2. Set up train/test split FIRST
     train_frac = 0.8
     T_train = int(len(t) * train_frac)
 
-    # Split data
+    # Split data before any preprocessing
     X_train = X[:, :T_train]
+    X_test = X[:, T_train:]
     t_train = t[:T_train]
+    t_test = t[T_train:]
 
-    # 3. DMD parameters
-    svd_rank = 10  # Increased from 6
-    delay = 2  # Increased from 2
+    print("\nData split diagnostics:")
+    print(f"Training data shape: {X_train.shape}")
+    print(f"Test data shape: {X_test.shape}")
+    print(f"Training time range: {t_train[0]:.1f} to {t_train[-1]:.1f} hours")
+    print(f"Test time range: {t_test[0]:.1f} to {t_test[-1]:.1f} hours")
 
-    # Print the size of the variable
-    print(f"size of X: {X_train.shape}")
-
-    # Normalize the data before DMD
+    # 3. NOW normalize using only training data
     X_mean = np.mean(X_train, axis=1, keepdims=True)
     X_std = np.std(X_train, axis=1, keepdims=True)
     X_train_normalized = (X_train - X_mean) / X_std
 
-    # 4. Fit DMD
+    # 4. DMD parameters
+    svd_rank = 6  # Keep this the same for now
+    delay = 2
+
+    # 5. Fit DMD
     optdmd = BOPDMD(
         svd_rank=svd_rank,
         num_trials=0,
@@ -95,7 +95,7 @@ def run_dmd_analysis(ds, output_dir):
     # Fit DMD with adjusted time vector
     delay_optdmd.fit(X_train_normalized, t=t_train_adjusted)
 
-    # 5. Get DMD components
+    # 6. Get DMD components
     modes = delay_optdmd.modes
     eigs = delay_optdmd.eigs
     amplitudes = delay_optdmd.amplitudes
@@ -109,27 +109,19 @@ def run_dmd_analysis(ds, output_dir):
     print(f"X_mean shape: {X_mean.shape}")
     print(f"X_std shape: {X_std.shape}")
 
-    # Create time vector and compute DMD solution
+    # 7. Create time vector and compute DMD solution
     n_points = X.shape[1]
     t_eval = np.arange(n_points) * (t[1] - t[0])  # Use actual time step
 
-    # Compute DMD reconstruction
+    # Take absolute value for complex numbers
     vander = np.vander(eigs, n_points, increasing=True)
-    X_dmd_normalized = (modes @ np.diag(amplitudes) @ vander).T
+    X_dmd = np.abs(modes @ np.diag(amplitudes) @ vander).T
 
-    # Reshape X_dmd_normalized to match original spatial dimensions
-    X_dmd_normalized = X_dmd_normalized[
-        :, :n_spatial
-    ]  # Truncate to original spatial dimensions
-
-    # Now denormalize
-    X_dmd = (X_dmd_normalized * X_std.T) + X_mean.T
-
-    # 7. Reshape and compute spatial means
+    # 8. Reshape and compute spatial means
     n_spatial = X.shape[0]
     n_time = X.shape[1]
-    n_lat = len(lats)
-    n_lon = len(lons)
+    n_lat = len(ds.latitude.values)
+    n_lon = len(ds.longitude.values)
 
     X_dmd = X_dmd[:n_time, :n_spatial].T
 
@@ -137,13 +129,18 @@ def run_dmd_analysis(ds, output_dir):
     X_true_mean = np.average(
         np.average(
             X.reshape(n_spatial, n_time).reshape(-1, n_lat, n_lon),
-            weights=weights,
+            weights=np.cos(np.deg2rad(ds.latitude.values)),
             axis=1,
         ),
         axis=1,
     )
     X_dmd_mean = np.average(
-        np.average(X_dmd.reshape(-1, n_lat, n_lon), weights=weights, axis=1), axis=1
+        np.average(
+            X_dmd.reshape(-1, n_lat, n_lon),
+            weights=np.cos(np.deg2rad(ds.latitude.values)),
+            axis=1,
+        ),
+        axis=1,
     )
 
     # Print DMD diagnostics
