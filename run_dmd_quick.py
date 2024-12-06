@@ -35,6 +35,15 @@ def run_dmd_analysis(ds, output_dir):
 
     X = temp_data.values.reshape(temp_data.shape[0], -1).T  # Reshape to (space, time)
 
+    # Add diagnostics
+    print(f"Temperature range: {temp_data.min().values} to {temp_data.max().values} K")
+    print(f"Temperature standard deviation: {temp_data.std().values} K")
+
+    # After reshaping, check X matrix
+    X = temp_data.values.reshape(temp_data.shape[0], -1).T  # Reshape to (space, time)
+    print(f"X matrix range: {X.min()} to {X.max()}")
+    print(f"X matrix standard deviation: {X.std()}")
+
     # Get time vector from xarray and convert to hours since start
     t = (ds.time - ds.time[0]) / np.timedelta64(1, "h")
     t = t.values
@@ -115,6 +124,14 @@ def run_dmd_analysis(ds, output_dir):
     X_dmd_mean = np.average(
         np.average(X_dmd.reshape(-1, n_lat, n_lon), weights=weights, axis=1), axis=1
     )
+
+    # After fitting, add diagnostics
+    print("\nDMD Diagnostics:")
+    print(f"Number of modes: {modes.shape[1]}")
+    print(f"Eigenvalues range: {np.min(np.abs(eigs))} to {np.max(np.abs(eigs))}")
+    min_amplitude = np.min(np.abs(amplitudes))
+    max_amplitude = np.max(np.abs(amplitudes))
+    print(f"Amplitudes range: {min_amplitude} to {max_amplitude}")
 
     # 8. Create and save plot
     plt.figure(figsize=(10, 6))
