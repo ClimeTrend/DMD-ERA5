@@ -99,52 +99,70 @@ def test_resample_era5_dataset():
     ).all(), "Expected time delta to be 6 hours"
 
 
-def test_standardize_data():
+@pytest.mark.parametrize(
+    "data", ["mock_era5_temperature", "mock_era5_temperature_wind"]
+)
+def test_standardize_data(data, request):
     """Test the standardize_data function."""
-    mock_era5 = create_mock_era5(
-        start_datetime="2019-01-01",
-        end_datetime="2019-01-10",
-        variables=["temperature"],
-        levels=[1000],
-    )
-    temperature_standardized = standardize_data(mock_era5["temperature"])
-    assert np.allclose(temperature_standardized.values.mean(), 0), "Expected mean 0"
-    assert np.allclose(temperature_standardized.values.std(), 1), "Expected std 1"
-
-
-def test_standardize_data_no_scale():
-    """Test standardize_data with scale=False."""
-    mock_era5 = create_mock_era5(
-        start_datetime="2019-01-01",
-        end_datetime="2019-01-10",
-        variables=["temperature"],
-        levels=[1000],
-    )
-    original_std = mock_era5["temperature"].std(dim="time", keepdims=True)
-    temperature_standardized = standardize_data(mock_era5["temperature"], scale=False)
+    mock_era5 = request.getfixturevalue(data)
+    data_standardized = standardize_data(mock_era5)
     assert np.allclose(
-        temperature_standardized.mean(dim="time", keepdims=True), 0
+        data_standardized["temperature"].mean(dim="time"), 0
     ), "Expected mean 0"
     assert np.allclose(
-        temperature_standardized.std(dim="time", keepdims=True), original_std
-    ), "Expected std to be unchanged"
-
-
-def test_standardize_data_different_dimension():
-    """Test standardize_data along a different dimension."""
-    mock_era5 = create_mock_era5(
-        start_datetime="2019-01-01",
-        end_datetime="2019-01-10",
-        variables=["temperature"],
-        levels=[1000, 850, 500],
-    )
-    temperature_standardized = standardize_data(mock_era5["temperature"], dim="level")
-    assert np.allclose(
-        temperature_standardized.mean(dim="level").values, 0
-    ), "Expected mean 0"
-    assert np.allclose(
-        temperature_standardized.std(dim="level").values, 1
+        data_standardized["temperature"].std(dim="time"), 1
     ), "Expected std 1"
+    if data == "mock_era5_temperature_wind":
+        assert np.allclose(
+            data_standardized["u_component_of_wind"].mean(dim="time"), 0
+        ), "Expected mean 0"
+        assert np.allclose(
+            data_standardized["u_component_of_wind"].std(dim="time"), 1
+        ), "Expected std 1"
+
+
+@pytest.mark.parametrize(
+    "data", ["mock_era5_temperature", "mock_era5_temperature_wind"]
+)
+def test_standardize_data_no_scale(data, request):
+    """Test standardize_data with scale=False."""
+    mock_era5 = request.getfixturevalue(data)
+    data_standardized = standardize_data(mock_era5, scale=False)
+    assert np.allclose(
+        data_standardized["temperature"].mean(dim="time"), 0
+    ), "Expected mean 0"
+    assert not np.allclose(
+        data_standardized["temperature"].std(dim="time"), 1
+    ), "Expected std to be unchanged"
+    if data == "mock_era5_temperature_wind":
+        assert np.allclose(
+            data_standardized["u_component_of_wind"].mean(dim="time"), 0
+        ), "Expected mean 0"
+        assert not np.allclose(
+            data_standardized["u_component_of_wind"].std(dim="time"), 1
+        ), "Expected std to be unchanged"
+
+
+@pytest.mark.parametrize(
+    "data", ["mock_era5_temperature", "mock_era5_temperature_wind"]
+)
+def test_standardize_data_different_dimension(data, request):
+    """Test standardize_data along a different dimension."""
+    mock_era5 = request.getfixturevalue(data)
+    data_standardized = standardize_data(mock_era5, dim="level")
+    assert np.allclose(
+        data_standardized["temperature"].mean(dim="level").values, 0
+    ), "Expected mean 0"
+    assert np.allclose(
+        data_standardized["temperature"].std(dim="level").values, 1
+    ), "Expected std 1"
+    if data == "mock_era5_temperature_wind":
+        assert np.allclose(
+            data_standardized["u_component_of_wind"].mean(dim="level").values, 0
+        ), "Expected mean 0"
+        assert np.allclose(
+            data_standardized["u_component_of_wind"].std(dim="level").values, 1
+        ), "Expected std 1"
 
 
 @pytest.mark.parametrize(
