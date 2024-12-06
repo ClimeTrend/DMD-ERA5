@@ -44,14 +44,14 @@ def run_dmd_analysis(ds, output_dir):
     t_train = t[:T_train]
 
     # 3. DMD parameters
-    svd_rank = -1
+    svd_rank = 6 # Make sure it is not trying to optimise to everything
     delay = 2
 
     # 4. Fit DMD
     optdmd = BOPDMD(
         svd_rank=svd_rank,
         num_trials=0,
-        use_proj=False,
+        use_proj=True,
         eig_constraints={"imag"},
         varpro_opts_dict={"verbose": True},
     )
