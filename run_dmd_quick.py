@@ -42,6 +42,11 @@ def run_dmd_analysis(ds, output_dir):
     print(f"X matrix range: {X.min()} to {X.max()}")
     print(f"X matrix standard deviation: {X.std()}")
 
+    # Normalize the data before splitting
+    X_mean = np.mean(X, axis=1, keepdims=True)
+    X_std = np.std(X, axis=1, keepdims=True)
+    X_normalized = (X - X_mean) / X_std
+
     # Get time vector from xarray and convert to hours since start
     t = (ds.time - ds.time[0]) / np.timedelta64(1, "h")
     t = t.values
@@ -60,7 +65,7 @@ def run_dmd_analysis(ds, output_dir):
     T_train = int(len(t) * train_frac)
 
     # Split data
-    X_train = X[:, :T_train]
+    X_train = X_normalized[:, :T_train]
     t_train = t[:T_train]
 
     # 3. DMD parameters
@@ -69,11 +74,6 @@ def run_dmd_analysis(ds, output_dir):
 
     # Print the size of the variable
     print(f"size of X: {X_train.shape}")
-
-    # Normalize the data before DMD
-    X_mean = np.mean(X_train, axis=1, keepdims=True)
-    X_std = np.std(X_train, axis=1, keepdims=True)
-    X_train_normalized = (X_train - X_mean) / X_std
 
     # 4. Fit DMD
     optdmd = BOPDMD(
@@ -93,7 +93,7 @@ def run_dmd_analysis(ds, output_dir):
     t_train_adjusted = t_train[delay - 1 :]
 
     # Fit DMD with adjusted time vector
-    delay_optdmd.fit(X_train_normalized, t=t_train_adjusted)
+    delay_optdmd.fit(X_train, t=t_train_adjusted)
 
     # 5. Get DMD components
     modes = delay_optdmd.modes
