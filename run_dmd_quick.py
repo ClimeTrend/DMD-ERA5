@@ -115,12 +115,14 @@ def run_dmd_analysis(ds, output_dir):
     # Training period
     vander_train = np.vander(eigs, T_train, increasing=True)
     X_dmd_train_normalized = (modes @ np.diag(amplitudes) @ vander_train).T
-    X_dmd_train = (X_dmd_train_normalized * X_train_std.T) + X_train_mean.T
+    X_dmd_train = (X_dmd_train_normalized.T * X_train_std) + X_train_mean
+    X_dmd_train = X_dmd_train.T  # Transpose back to original orientation
 
     # Test period (true prediction)
     vander_test = np.vander(eigs, len(t_test), increasing=True)
     X_dmd_test_normalized = (modes @ np.diag(amplitudes) @ vander_test).T
-    X_dmd_test = (X_dmd_test_normalized * X_train_std.T) + X_train_mean.T
+    X_dmd_test = (X_dmd_test_normalized.T * X_train_std) + X_train_mean
+    X_dmd_test = X_dmd_test.T  # Transpose back to original orientation
 
     # Combine results
     X_dmd = np.concatenate([X_dmd_train, X_dmd_test], axis=0)
@@ -204,10 +206,10 @@ def run_dmd_analysis(ds, output_dir):
         label="DMD variability",
     )
 
-    # Plot means as before
-    plt.plot(t_train, X_true_mean, color="r", label="True values")
-    plt.plot(t_train, X_dmd_mean, color="grey", label="DMD reconstruction/prediction")
-    plt.axvline(t_train[T_train], linestyle="--", color="k", label="Train/Test split")
+    # Plot means with proper time vectors
+    plt.plot(t, X_true_mean, color="r", label="True values")
+    plt.plot(t, X_dmd_mean, color="grey", label="DMD reconstruction/prediction")
+    plt.axvline(t[T_train], linestyle="--", color="k", label="Train/Test split")
 
     # Add RMSE values to plot
     plt.text(
