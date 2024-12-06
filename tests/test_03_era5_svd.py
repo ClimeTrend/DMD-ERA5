@@ -5,6 +5,7 @@ Tests for the era5_svd module.
 from datetime import datetime, timedelta
 
 import pytest
+import xarray as xr
 
 from dmd_era5 import config_parser
 from dmd_era5.create_mock_data import create_mock_era5, create_mock_era5_svd
@@ -147,4 +148,17 @@ def test_svd_on_era5(base_config, mock_era5_small, svd_type):
 def test_combine_svd_results(mock_era5_svd):
     """Test the combine_svd_results function."""
     U, s, V, coords = mock_era5_svd
-    combine_svd_results(U, s, V, coords)
+    da = combine_svd_results(U, s, V, coords)
+    assert isinstance(da, xr.Dataset), f"Expected xr.Dataset, got {type(da)}"
+    assert sorted(da.data_vars.keys()) == sorted(["U", "s", "V"]), f"""
+    Expected data_vars to be ['U', 's', 'V'], got {list(da.data_vars.keys())}
+    """
+    assert sorted(da.U.dims) == sorted(["components", "space"]), """
+    Expected U to have dims ('space', 'components')
+    """
+    assert sorted(da.s.dims) == [
+        "components"
+    ], """Expected s to have dims ('components',)"""
+    assert sorted(da.V.dims) == sorted(["components", "time"]), """
+    Expected V to have dims ('components', 'time')
+    """

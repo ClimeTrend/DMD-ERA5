@@ -75,6 +75,9 @@ def combine_svd_results(
         coords (xr.Coordinates): The coordinates of the pre-processed ERA5 slice on
             which the SVD was performed.
         attrs (dict): The attributes to be added to the xarray Dataset.
+
+    Returns:
+        xr.Dataset: The xarray Dataset containing the SVD results.
     """
 
     U_da = xr.DataArray(
