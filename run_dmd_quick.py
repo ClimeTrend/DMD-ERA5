@@ -102,7 +102,7 @@ def run_dmd_analysis(ds, output_dir):
     t_eval = np.arange(n_points) * (t[1] - t[0])  # Use actual time step
 
     vander = np.vander(eigs, n_points, increasing=True)
-    X_dmd = (modes @ np.diag(amplitudes) @ vander).T
+    X_dmd = np.abs(modes @ np.diag(amplitudes) @ vander).T
 
     # 7. Reshape and compute spatial means
     n_spatial = X.shape[0]
@@ -132,11 +132,20 @@ def run_dmd_analysis(ds, output_dir):
     min_amplitude = np.min(np.abs(amplitudes))
     max_amplitude = np.max(np.abs(amplitudes))
     print(f"Amplitudes range: {min_amplitude} to {max_amplitude}")
+    print("\nEigenvalues:")
+    for i, eig in enumerate(eigs):
+        print(
+            f"Mode {i}: magnitude = {np.abs(eig):.6f}, "
+            f"frequency = {np.angle(eig)/(2*np.pi):.6f} "
+            f"cycles/timestep"
+        )
 
     # 8. Create and save plot
     plt.figure(figsize=(10, 6))
-    plt.plot(t_eval, X_dmd_mean, color="grey", label="DMD reconstruction/prediction")
-    plt.plot(t_eval, X_true_mean, color="r", label="True values")
+    plt.plot(
+        t_eval, np.real(X_dmd_mean), color="grey", label="DMD reconstruction/prediction"
+    )
+    plt.plot(t_eval, np.real(X_true_mean), color="r", label="True values")
     plt.axvline(t_eval[T_train], linestyle="--", color="k", label="Present")
     plt.ylabel("Spatial mean temperature (K)")
     plt.xlabel("Hours")
