@@ -204,9 +204,15 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
     parsed_config["save_path"] = os.path.join(
         save_directory, parsed_config["save_name"]
     )
+    parsed_config["era5_slice_path"] = os.path.join(
+        here(), "data", "era5_download", parsed_config["save_name"]
+    )
 
     # --- Parse the section-specific fields ---
     if section == "era5-svd":
+        parsed_config["era5_svd_path"] = os.path.join(
+            here(), "data", "era5_svd", parsed_config["save_name"]
+        )
         # Parse the SVD type
         parsed_config["svd_type"] = config["svd_type"]
         supported_svd_types = ["standard", "randomized"]

@@ -126,15 +126,43 @@ def retrieve_data_from_dvc(
     If the dvc file or log file does not exist, raises FileNotFoundError.
     If a matching version of the data does not exist in the log, raises ValueError.
     If a matching version of the data exists in the log but cannot be retrieved
-    from DVC,raises ValueError.
+    from DVC, raises ValueError.
 
     Args:
         parsed_config (dict): The parsed configuration.
-        data_type (str): The type of data to retrieve.
+        data_type (str): The type of data to retrieve
+            For example, a slice of ERA5, or SVD results.
             Currently only "era5_slice" and "era5_svd" are supported.
     """
-    log_file_path = parsed_config["save_path"] + ".yaml"
-    dvc_file_path = parsed_config["save_path"] + ".dvc"
+
+    if data_type == "era5_slice":
+        try:
+            log_file_path = parsed_config["era5_slice_path"] + ".yaml"
+            dvc_file_path = parsed_config["era5_slice_path"] + ".dvc"
+        except KeyError as e:
+            msg = """
+            The configuration dictionary does not contain the path to the ERA5 slice.
+            Are you sure you are using the correct configuration or requesting
+            the correct data type?
+            """
+            raise KeyError(msg) from e
+    elif data_type == "era5_svd":
+        try:
+            log_file_path = parsed_config["era5_svd_path"] + ".yaml"
+            dvc_file_path = parsed_config["era5_svd_path"] + ".dvc"
+        except KeyError as e:
+            msg = """
+            The configuration dictionary does not contain the path to the ERA5 SVD data.
+            Are you sure you are using the correct configuration or requesting
+            the correct data type?
+            """
+            raise KeyError(msg) from e
+    else:
+        msg = """
+        Data type not supported.
+        Currently only 'era5_slice' and 'era5_svd' are supported.
+        """
+        raise ValueError(msg)
 
     if not os.path.exists(log_file_path) or not os.path.exists(dvc_file_path):
         msg = "DVC file or log file does not exist."
@@ -177,12 +205,6 @@ def retrieve_data_from_dvc(
                 if date_downloaded > date_downloaded_keep:
                     md5_hash_keep = md5_hash
                     date_downloaded_keep = date_downloaded
-    else:
-        msg = """
-        Data type not supported.
-        Currently only 'era5_slice' and 'era5_svd' are supported.
-        """
-        raise ValueError(msg)
 
     if md5_hash_keep:
         commit_hash = find_first_commit_with_md5_hash(md5_hash_keep, dvc_file_path)
