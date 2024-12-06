@@ -39,6 +39,10 @@ def run_dmd_analysis(ds, output_dir):
     t = (ds.time - ds.time[0]) / np.timedelta64(1, "h")
     t = t.values
 
+    print(f"Number of total hours: {len(t)}")
+    print(f"Number of days: {len(t) / 24}")
+    print(f"Number of total spatial points: {X.shape[0]}")
+
     # Get spatial dimensions
     lats = ds.latitude.values
     lons = ds.longitude.values
