@@ -220,25 +220,50 @@ def run_dmd_analysis(ds, output_dir):
     X_true_std = np.std(X.reshape(-1, n_lat, n_lon), axis=(1, 2))
     X_dmd_std = np.std(X_dmd.reshape(-1, n_lat, n_lon), axis=(1, 2))
 
+    # Add before plotting
+    print("\nShape verification before plotting:")
+    print(f"Time vector shape: {t.shape}")
+    print(f"X_true_std shape: {X_true_std.shape}")
+    print(f"X_dmd_std shape: {X_dmd_std.shape}")
+    print(f"Training period length: {T_train}")
+
     # Create the plot with error bands
     plt.figure(figsize=(12, 8))
 
-    # Plot means with spatial standard deviation bands
+    # Plot means with spatial standard deviation bands - separate train and test periods
     plt.fill_between(
-        t_train,
-        X_true_mean - X_true_std,
-        X_true_mean + X_true_std,
+        t[:T_train],  # Use training period time points
+        X_true_mean[:T_train] - X_true_std[:T_train],
+        X_true_mean[:T_train] + X_true_std[:T_train],
         color="r",
         alpha=0.2,
-        label="True variability",
+        label="True variability (train)",
     )
     plt.fill_between(
-        t_train,
-        X_dmd_mean - X_dmd_std,
-        X_dmd_mean + X_dmd_std,
+        t[T_train:],  # Use test period time points
+        X_true_mean[T_train:] - X_true_std[T_train:],
+        X_true_mean[T_train:] + X_true_std[T_train:],
+        color="r",
+        alpha=0.1,
+        label="True variability (test)",
+    )
+
+    # DMD variability bands
+    plt.fill_between(
+        t[:T_train],  # Use training period time points
+        X_dmd_mean[:T_train] - X_dmd_std[:T_train],
+        X_dmd_mean[:T_train] + X_dmd_std[:T_train],
         color="grey",
         alpha=0.2,
-        label="DMD variability",
+        label="DMD variability (train)",
+    )
+    plt.fill_between(
+        t[T_train:],  # Use test period time points
+        X_dmd_mean[T_train:] - X_dmd_std[T_train:],
+        X_dmd_mean[T_train:] + X_dmd_std[T_train:],
+        color="grey",
+        alpha=0.1,
+        label="DMD variability (test)",
     )
 
     # Plot means with proper time vectors
