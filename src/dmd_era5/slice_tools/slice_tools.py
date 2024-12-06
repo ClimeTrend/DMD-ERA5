@@ -142,21 +142,21 @@ def resample_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
 
 
 def standardize_data(
-    data: xr.DataArray | xr.Dataset,
+    data: xr.Dataset,
     dim: str = "time",
     scale: bool = True,
-) -> xr.DataArray | xr.Dataset:
+) -> xr.Dataset:
     """
-    Standardize the input DataArray by applying mean centering and (optionally)
+    Standardize the input Dataset by applying mean centering and (optionally)
     scaling to unit variance along the specified dimension.
 
     Args:
-        data (xr.DataArray): The input data to standardize.
+        data (xr.Dataset): The input data to standardize.
         dim (str): The dimension along which to standardize. Default is "time".
         scale (bool): Whether to scale the data. Default is True.
 
     Returns:
-        xr.DataArray or xr.Dataset: The standardized data.
+        xr.Dataset: The standardized data.
     """
     log_and_print(logger, f"Standardizing data along {dim} dimension...")
 
