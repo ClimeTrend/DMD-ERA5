@@ -3,9 +3,10 @@ import sys
 
 import numpy as np
 import xarray as xr
-from sklearn.utils.extmath import randomized_svd
+from sklearn.utils.extmath import randomized_svd  # type: ignore[import-untyped]
 
-from dmd_era5 import (
+from dmd_era5.core import (
+    config_parser,
     config_reader,
     log_and_print,
     setup_logger,
@@ -57,6 +58,61 @@ def svd_on_era5(
     return U, s, V
 
 
+def combine_svd_results(
+    U: np.ndarray,
+    s: np.ndarray,
+    V: np.ndarray,
+    coords: xr.Coordinates,
+    attrs: dict | None = None,
+) -> xr.Dataset:
+    """
+    Given the SVD results U, s, and V, combine them into an xarray Dataset.
+
+    Args:
+        U (np.ndarray): The left singular vectors.
+        s (np.ndarray): The singular values.
+        V (np.ndarray): The right singular vectors.
+        coords (xr.Coordinates): The coordinates of the pre-processed ERA5 slice on
+            which the SVD was performed.
+        attrs (dict): The attributes to be added to the xarray Dataset.
+    """
+
+    U_da = xr.DataArray(
+        U,
+        dims=("space", "components"),
+        coords={
+            "space": coords["space"],
+            "components": np.arange(U.shape[1]),
+            "original_variable": ("space", coords["original_variable"]),
+            "delay": ("space", coords["delay"]),
+        },
+    )
+    s_da = xr.DataArray(
+        s,
+        dims=("components"),
+        coords={
+            "components": np.arange(s.shape[0]),
+        },
+    )
+    V_da = xr.DataArray(
+        V,
+        dims=("components", "time"),
+        coords={
+            "components": np.arange(V.shape[0]),
+            "time": coords["time"],
+        },
+    )
+    return xr.Dataset(
+        {
+            "U": U_da,
+            "s": s_da,
+            "V": V_da,
+        },
+        coords=coords,
+        attrs=attrs,
+    )
+
+
 def main(
     config: dict = config, use_mock_data: bool = False, use_dvc: bool = False
 ) -> tuple[bool, bool]:
@@ -83,5 +139,15 @@ def main(
     """
     added_to_dvc = False
     retrieved_from_dvc = False
+
+    try:
+        parsed_config = config_parser(config, section="era5-svd", logger=logger)
+
+        if use_dvc:
+            pass
+        else:
+            pass
+    except Exception as e:
+        log_and_print(logger, f"ERA5 SVD process failed: {e}", level="error")
 
     return added_to_dvc, retrieved_from_dvc
