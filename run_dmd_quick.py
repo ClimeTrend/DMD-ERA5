@@ -65,7 +65,7 @@ def run_dmd_analysis(ds, output_dir):
 
     # 3. DMD parameters
     svd_rank = 10  # Increased from 6
-    delay = 4  # Increased from 2
+    delay = 2  # Increased from 2
 
     # Print the size of the variable
     print(f"size of X: {X_train.shape}")
@@ -118,7 +118,9 @@ def run_dmd_analysis(ds, output_dir):
     X_dmd_normalized = (modes @ np.diag(amplitudes) @ vander).T
 
     # Reshape X_dmd_normalized to match original spatial dimensions
-    X_dmd_normalized = X_dmd_normalized[:, :n_spatial]
+    X_dmd_normalized = X_dmd_normalized[
+        :, :n_spatial
+    ]  # Truncate to original spatial dimensions
 
     # Now denormalize
     X_dmd = (X_dmd_normalized * X_std.T) + X_mean.T
