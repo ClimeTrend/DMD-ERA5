@@ -114,11 +114,13 @@ def run_dmd_analysis(ds, output_dir):
     # Training period reconstruction
     vander_train = np.vander(eigs, T_train, increasing=True)
     X_dmd_train_normalized = (modes @ np.diag(amplitudes) @ vander_train).T
+    X_dmd_train_normalized = X_dmd_train_normalized[:, :n_spatial]
     X_dmd_train = (X_dmd_train_normalized * X_train_std.T) + X_train_mean.T
 
     # Test period prediction
     vander_test = np.vander(eigs, len(t_test), increasing=True)
     X_dmd_test_normalized = (modes @ np.diag(amplitudes) @ vander_test).T
+    X_dmd_test_normalized = X_dmd_test_normalized[:, :n_spatial]
     X_dmd_test = (X_dmd_test_normalized * X_train_std.T) + X_train_mean.T
 
     # Combine results
