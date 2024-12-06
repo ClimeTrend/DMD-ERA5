@@ -25,7 +25,9 @@ def run_dmd_analysis(ds, output_dir):
     # 1. Prepare the data
     temp_data = ds["temperature"].isel(level=0)  # Select first level
 
-    print(f"Level chosen: {temp_data.level}")
+    print(
+        f"Level chosen: {temp_data.level.values[0]} hPa"
+    )  # Added .values[0] and units
 
     X = temp_data.values.reshape(temp_data.shape[0], -1).T  # Reshape to (space, time)
 
