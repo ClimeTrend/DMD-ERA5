@@ -43,3 +43,4 @@ repos:
           - pandas-stubs
           - dvc
           - types-PyYAML
+          - scikit-learn
