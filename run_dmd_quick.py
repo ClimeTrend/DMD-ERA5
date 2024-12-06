@@ -111,21 +111,27 @@ def run_dmd_analysis(ds, output_dir):
     print(f"X_mean shape: {X_train_mean.shape}")
     print(f"X_std shape: {X_train_std.shape}")
 
-    # Separate reconstruction for training and prediction
-    # Training period
+    # Training period reconstruction
     vander_train = np.vander(eigs, T_train, increasing=True)
     X_dmd_train_normalized = (modes @ np.diag(amplitudes) @ vander_train).T
-    X_dmd_train = (X_dmd_train_normalized.T * X_train_std) + X_train_mean
-    X_dmd_train = X_dmd_train.T  # Transpose back to original orientation
+    X_dmd_train = (X_dmd_train_normalized * X_train_std.T) + X_train_mean.T
 
-    # Test period (true prediction)
+    # Test period prediction
     vander_test = np.vander(eigs, len(t_test), increasing=True)
     X_dmd_test_normalized = (modes @ np.diag(amplitudes) @ vander_test).T
-    X_dmd_test = (X_dmd_test_normalized.T * X_train_std) + X_train_mean
-    X_dmd_test = X_dmd_test.T  # Transpose back to original orientation
+    X_dmd_test = (X_dmd_test_normalized * X_train_std.T) + X_train_mean.T
 
     # Combine results
     X_dmd = np.concatenate([X_dmd_train, X_dmd_test], axis=0)
+
+    # Get spatial dimensions
+    n_spatial = X.shape[0]
+    n_time = X.shape[1]
+    n_lat = len(lats)
+    n_lon = len(lons)
+
+    # Ensure correct dimensions
+    X_dmd = X_dmd[:n_time, :n_spatial].T
 
     # 7. Reshape and compute spatial means
     n_spatial = X.shape[0]
