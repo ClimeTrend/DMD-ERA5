@@ -24,6 +24,9 @@ def run_dmd_analysis(ds, output_dir):
 
     # 1. Prepare the data
     temp_data = ds["temperature"].isel(level=0)  # Select first level
+
+    print(f"Level chosen: {temp_data.level}")
+
     X = temp_data.values.reshape(temp_data.shape[0], -1).T  # Reshape to (space, time)
 
     # Get time vector from xarray and convert to hours since start
@@ -44,7 +47,7 @@ def run_dmd_analysis(ds, output_dir):
     t_train = t[:T_train]
 
     # 3. DMD parameters
-    svd_rank = 6 # Make sure it is not trying to optimise to everything
+    svd_rank = 100  # Make sure it is not trying to optimise to everything
     delay = 2
 
     # Print the size of the variable
