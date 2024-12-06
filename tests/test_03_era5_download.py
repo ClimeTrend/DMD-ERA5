@@ -2,10 +2,12 @@
 Tests for the era5_download module.
 """
 
+import os
 from datetime import datetime, timedelta
 
 import pytest
 import xarray as xr
+from pyprojroot import here
 
 from dmd_era5 import config_parser
 from dmd_era5.constants import ERA5_PRESSURE_LEVEL_VARIABLES, ERA5_PRESSURE_LEVELS
@@ -53,6 +55,20 @@ def test_config_parser_basic(base_config):
         parsed_config["save_name"] == "2019-01-01T00_2020-01-01T00_1y.nc"
     ), f"""save_name should be 2019-01-01T00_2020-01-01T00_1y.nc
     not {parsed_config['save_name']}"""
+    assert parsed_config["save_path"] == os.path.join(
+        here(), "data", "era5_download", parsed_config["save_name"]
+    ), f"""
+    save_path should be
+    {os.path.join(here(), 'data', 'era5_download', parsed_config['save_name'])}
+    not {parsed_config['save_path']}
+    """
+    assert parsed_config["era5_slice_path"] == os.path.join(
+        here(), "data", "era5_download", parsed_config["save_name"]
+    ), f"""
+    era5_slice_path should be
+    {os.path.join(here(), 'data', 'era5_download', parsed_config['save_name'])}
+    not {parsed_config['era5_slice_path']}
+    """
 
 
 # ----- Test cases -----

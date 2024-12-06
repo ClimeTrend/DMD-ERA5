@@ -2,10 +2,12 @@
 Tests for the era5_svd module.
 """
 
+import os
 from datetime import datetime, timedelta
 
 import pytest
 import xarray as xr
+from pyprojroot import here
 
 from dmd_era5 import config_parser
 from dmd_era5.create_mock_data import create_mock_era5, create_mock_era5_svd
@@ -77,6 +79,27 @@ def test_config_parser_basic(base_config):
     ), f"""end_datetime should be {datetime(2020, 1, 1, 12, 0)}
     not {parsed_config['end_datetime']}"""
     assert parsed_config["delta_time"] == timedelta(hours=1)
+    assert (
+        parsed_config["save_name"] == "2019-01-01T06_2020-01-01T12_1h.nc"
+    ), f"""save_name should be 2019-01-01T06_2020-01-01T12_1h.nc
+    not {parsed_config['save_name']}"""
+    assert parsed_config["save_path"] == os.path.join(
+        here(), "data", "era5_svd", parsed_config["save_name"]
+    ), f"""save_path should be
+    {os.path.join(here(), 'data', 'era5_svd', parsed_config['save_name'])}
+    not {parsed_config['save_path']}
+    """
+    assert parsed_config["era5_slice_path"] == os.path.join(
+        here(), "data", "era5_download", parsed_config["save_name"]
+    ), f"""era5_slice_path should be
+    {os.path.join(here(), 'data', 'era5_download', parsed_config['save_name'])}
+    not {parsed_config['era5_slice_path']}"""
+    assert parsed_config["era5_svd_path"] == os.path.join(
+        here(), "data", "era5_svd", parsed_config["save_name"]
+    ), f"""era5_svd_path should be
+    {os.path.join(here(), 'data', 'era5_svd', parsed_config['save_name'])}
+    not {parsed_config['era5_svd_path']}
+    """
 
 
 @pytest.mark.parametrize(
