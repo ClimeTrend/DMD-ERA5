@@ -61,7 +61,9 @@ def run_dmd_analysis(ds, output_dir):
 
     # Split data
     X_train = X[:, :T_train]
+    X_test = X[:, T_train:]
     t_train = t[:T_train]
+    t_test = t[T_train:]
 
     # 3. DMD parameters
     svd_rank = 10  # Increased from 6
@@ -70,10 +72,10 @@ def run_dmd_analysis(ds, output_dir):
     # Print the size of the variable
     print(f"size of X: {X_train.shape}")
 
-    # Normalize the data before DMD
-    X_mean = np.mean(X_train, axis=1, keepdims=True)
-    X_std = np.std(X_train, axis=1, keepdims=True)
-    X_train_normalized = (X_train - X_mean) / X_std
+    # Normalize training data only
+    X_train_mean = np.mean(X_train, axis=1, keepdims=True)
+    X_train_std = np.std(X_train, axis=1, keepdims=True)
+    X_train_normalized = (X_train - X_train_mean) / X_train_std
 
     # 4. Fit DMD
     optdmd = BOPDMD(
@@ -106,24 +108,22 @@ def run_dmd_analysis(ds, output_dir):
     print("\nShape diagnostics:")
     print(f"Original X shape: {X.shape}")
     print(f"Modes shape: {modes.shape}")
-    print(f"X_mean shape: {X_mean.shape}")
-    print(f"X_std shape: {X_std.shape}")
+    print(f"X_mean shape: {X_train_mean.shape}")
+    print(f"X_std shape: {X_train_std.shape}")
 
-    # Create time vector and compute DMD solution
-    n_points = X.shape[1]
-    t_eval = np.arange(n_points) * (t[1] - t[0])  # Use actual time step
+    # Separate reconstruction for training and prediction
+    # Training period
+    vander_train = np.vander(eigs, T_train, increasing=True)
+    X_dmd_train_normalized = (modes @ np.diag(amplitudes) @ vander_train).T
+    X_dmd_train = (X_dmd_train_normalized * X_train_std.T) + X_train_mean.T
 
-    # Compute DMD reconstruction
-    vander = np.vander(eigs, n_points, increasing=True)
-    X_dmd_normalized = (modes @ np.diag(amplitudes) @ vander).T
+    # Test period (true prediction)
+    vander_test = np.vander(eigs, len(t_test), increasing=True)
+    X_dmd_test_normalized = (modes @ np.diag(amplitudes) @ vander_test).T
+    X_dmd_test = (X_dmd_test_normalized * X_train_std.T) + X_train_mean.T
 
-    # Reshape X_dmd_normalized to match original spatial dimensions
-    X_dmd_normalized = X_dmd_normalized[
-        :, :n_spatial
-    ]  # Truncate to original spatial dimensions
-
-    # Now denormalize
-    X_dmd = (X_dmd_normalized * X_std.T) + X_mean.T
+    # Combine results
+    X_dmd = np.concatenate([X_dmd_train, X_dmd_test], axis=0)
 
     # 7. Reshape and compute spatial means
     n_spatial = X.shape[0]
@@ -188,7 +188,7 @@ def run_dmd_analysis(ds, output_dir):
 
     # Plot means with spatial standard deviation bands
     plt.fill_between(
-        t_eval,
+        t_train,
         X_true_mean - X_true_std,
         X_true_mean + X_true_std,
         color="r",
@@ -196,7 +196,7 @@ def run_dmd_analysis(ds, output_dir):
         label="True variability",
     )
     plt.fill_between(
-        t_eval,
+        t_train,
         X_dmd_mean - X_dmd_std,
         X_dmd_mean + X_dmd_std,
         color="grey",
@@ -205,9 +205,9 @@ def run_dmd_analysis(ds, output_dir):
     )
 
     # Plot means as before
-    plt.plot(t_eval, X_true_mean, color="r", label="True values")
-    plt.plot(t_eval, X_dmd_mean, color="grey", label="DMD reconstruction/prediction")
-    plt.axvline(t_eval[T_train], linestyle="--", color="k", label="Train/Test split")
+    plt.plot(t_train, X_true_mean, color="r", label="True values")
+    plt.plot(t_train, X_dmd_mean, color="grey", label="DMD reconstruction/prediction")
+    plt.axvline(t_train[T_train], linestyle="--", color="k", label="Train/Test split")
 
     # Add RMSE values to plot
     plt.text(
@@ -252,6 +252,21 @@ def run_dmd_analysis(ds, output_dir):
         "train_points": T_train,
     }
     np.save(os.path.join(output_dir, f"dmd_metadata_{timestamp}.npy"), metadata)
+
+    # After creating X_test
+    print("\nTest Set Evaluation:")
+    # Calculate reconstruction error on test set
+    test_error = np.mean((X_test - X_dmd_test.T) ** 2)
+    print(f"Mean squared error on test set: {test_error:.6f}")
+
+    # Calculate relative error
+    relative_error = np.linalg.norm(X_test - X_dmd_test.T) / np.linalg.norm(X_test)
+    print(f"Relative error on test set: {relative_error:.6f}")
+
+    # Add test metrics to metadata
+    metadata.update(
+        {"test_mse": float(test_error), "test_relative_error": float(relative_error)}
+    )
 
     return timestamp
 
