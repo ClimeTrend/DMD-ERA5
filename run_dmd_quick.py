@@ -245,13 +245,21 @@ def run_dmd_analysis(ds, output_dir):
 
     #  New plot at specific location
 
-    # Randomly select a latitude and longitude index
+    # Reshape X and X_dmd to their original spatial dimensions
+    n_spatial = len(lats) * len(lons)
+    X_reshaped = X.reshape(n_spatial, -1)
+    X_dmd_reshaped = X_dmd.reshape(n_spatial, -1)
+
+    # Randomly select a latitude and longitude index using numpy
     lat_index = np.random.randint(0, len(lats))
     lon_index = np.random.randint(0, len(lons))
 
+    # Calculate the flat index for the selected latitude and longitude
+    flat_index = lat_index * len(lons) + lon_index
+
     # Extract true and predicted data for the randomly chosen location
-    X_true_location = X[:, lat_index, lon_index]
-    X_dmd_location = X_dmd[:, lat_index, lon_index]
+    X_true_location = X_reshaped[flat_index, :]
+    X_dmd_location = X_dmd_reshaped[flat_index, :]
 
     # Get the actual latitude and longitude values for the selected indices
     selected_latitude = lats[lat_index]
@@ -277,6 +285,8 @@ def run_dmd_analysis(ds, output_dir):
     )
     plt.savefig(plot_filename)
     plt.close()
+
+    print(f"Plot saved as {plot_filename}")
 
     # 9. Save DMD results as numpy arrays
     np.save(os.path.join(output_dir, f"dmd_modes_{timestamp}.npy"), modes)
