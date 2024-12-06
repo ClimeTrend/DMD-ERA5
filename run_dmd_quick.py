@@ -243,6 +243,41 @@ def run_dmd_analysis(ds, output_dir):
     plt.savefig(os.path.join(output_dir, f"dmd_prediction_{timestamp}.png"))
     plt.close()
 
+    #  New plot at specific location
+
+    # Randomly select a latitude and longitude index
+    lat_index = np.random.randint(0, len(lats))
+    lon_index = np.random.randint(0, len(lons))
+
+    # Extract true and predicted data for the randomly chosen location
+    X_true_location = X[:, lat_index, lon_index]
+    X_dmd_location = X_dmd[:, lat_index, lon_index]
+
+    # Get the actual latitude and longitude values for the selected indices
+    selected_latitude = lats[lat_index]
+    selected_longitude = lons[lon_index]
+
+    # Create a plot for the randomly chosen location
+    plt.figure(figsize=(10, 6))
+    plt.plot(t_eval, X_true_location, label="True values", color="r")
+    plt.plot(t_eval, X_dmd_location, label="DMD prediction", color="grey")
+    plt.axvline(t_eval[T_train], linestyle="--", color="k", label="Train/Test split")
+    plt.xlabel("Hours")
+    plt.ylabel("Temperature (K)")
+    plt.title(
+        f"Temperature Prediction at Random Location \n"
+        f"({selected_latitude:.2f}, {selected_longitude:.2f})"
+    )
+    plt.legend()
+
+    # Save the plot
+    plot_filename = os.path.join(
+        output_dir,
+        f"temperature_prediction_{selected_latitude:.2f}_{selected_longitude:.2f}.png",
+    )
+    plt.savefig(plot_filename)
+    plt.close()
+
     # 9. Save DMD results as numpy arrays
     np.save(os.path.join(output_dir, f"dmd_modes_{timestamp}.npy"), modes)
     np.save(os.path.join(output_dir, f"dmd_eigs_{timestamp}.npy"), eigs)
