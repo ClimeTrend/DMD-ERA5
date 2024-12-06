@@ -164,15 +164,21 @@ def run_dmd_analysis(ds, output_dir):
     # Compute weighted spatial means
     X_true_mean = np.average(
         np.average(
-            X.reshape(n_spatial, n_time).reshape(-1, n_lat, n_lon),
+            X.reshape(-1, n_lat, n_lon),  # Reshape original data
             weights=weights,
             axis=1,
         ),
         axis=1,
     )
-    X_dmd_mean = np.average(
-        np.average(X_dmd.reshape(-1, n_lat, n_lon), weights=weights, axis=1), axis=1
-    )
+
+    # For X_dmd, we need to handle each timestep separately
+    X_dmd_reshaped = X_dmd.T.reshape(n_time, n_lat, n_lon)  # Reshape DMD results
+    X_dmd_mean = np.average(np.average(X_dmd_reshaped, weights=weights, axis=1), axis=1)
+
+    # Print shapes for verification
+    print("\nFinal shapes:")
+    print(f"X_true_mean shape: {X_true_mean.shape}")
+    print(f"X_dmd_mean shape: {X_dmd_mean.shape}")
 
     # Print DMD diagnostics
     print("\nDMD Diagnostics:")
