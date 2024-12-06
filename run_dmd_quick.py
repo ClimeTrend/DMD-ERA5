@@ -47,6 +47,9 @@ def run_dmd_analysis(ds, output_dir):
     svd_rank = 6 # Make sure it is not trying to optimise to everything
     delay = 2
 
+    # Print the size of the variable
+    print(f"size of X: {X_train.shape}")
+
     # 4. Fit DMD
     optdmd = BOPDMD(
         svd_rank=svd_rank,
