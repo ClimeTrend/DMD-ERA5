@@ -162,6 +162,12 @@ def test_standardize_data_no_scale(data, request):
 def test_standardize_data_different_dimension(data, request):
     """Test standardize_data along a different dimension."""
     mock_era5 = request.getfixturevalue(data)
+    assert not np.allclose(
+        mock_era5["temperature"].mean(dim="level").values, 0
+    ), "Expected non-zero mean"
+    assert not np.allclose(
+        mock_era5["temperature"].std(dim="level").values, 1
+    ), "Expected non-unity std"
     data_standardized = standardize_data(mock_era5, dim="level")
     assert np.allclose(
         data_standardized["temperature"].mean(dim="level").values, 0
@@ -170,6 +176,12 @@ def test_standardize_data_different_dimension(data, request):
         data_standardized["temperature"].std(dim="level").values, 1
     ), "Expected std 1"
     if data == "mock_era5_temperature_wind":
+        assert not np.allclose(
+            mock_era5["u_component_of_wind"].mean(dim="level").values, 0
+        ), "Expected non-zero mean"
+        assert not np.allclose(
+            mock_era5["u_component_of_wind"].std(dim="level").values, 1
+        ), "Expected non-unity std"
         assert np.allclose(
             data_standardized["u_component_of_wind"].mean(dim="level").values, 0
         ), "Expected mean 0"
