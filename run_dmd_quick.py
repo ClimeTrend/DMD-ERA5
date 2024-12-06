@@ -37,8 +37,8 @@ def run_dmd_analysis(ds, output_dir):
     print(f"Temperature range: {temp_data.min().values} to {temp_data.max().values} K")
     print(f"Temperature standard deviation: {temp_data.std().values} K")
 
-    # After reshaping, check X matrix
-    X = temp_data.values.reshape(temp_data.shape[0], -1).T  # Reshape to (space, time)
+    # Reshape to (space, time)
+    X = temp_data.values.reshape(temp_data.shape[0], -1).T
     print(f"X matrix range: {X.min()} to {X.max()}")
     print(f"X matrix standard deviation: {X.std()}")
 
@@ -50,17 +50,13 @@ def run_dmd_analysis(ds, output_dir):
     print(f"Number of days: {len(t)/24}")
     print(f"Number of total spatial points: {X.shape[0]}")
 
-    # Get spatial dimensions
-    lats = ds.latitude.values
-    lons = ds.longitude.values
-    weights = np.cos(np.deg2rad(lats))
-
-    # 2. Set up train/test split
+    # 2. Set up train/test split FIRST
     train_frac = 0.8
     T_train = int(len(t) * train_frac)
 
-    # Split data
+    # Split data before any preprocessing
     X_train = X[:, :T_train]
+    X_test = X[:, T_train:]
     X_test = X[:, T_train:]
     t_train = t[:T_train]
     t_test = t[T_train:]
@@ -77,7 +73,11 @@ def run_dmd_analysis(ds, output_dir):
     X_train_std = np.std(X_train, axis=1, keepdims=True)
     X_train_normalized = (X_train - X_train_mean) / X_train_std
 
-    # 4. Fit DMD
+    # 4. DMD parameters
+    svd_rank = 6  # Keep this the same for now
+    delay = 2
+
+    # 5. Fit DMD
     optdmd = BOPDMD(
         svd_rank=svd_rank,
         num_trials=0,
@@ -97,7 +97,7 @@ def run_dmd_analysis(ds, output_dir):
     # Fit DMD with adjusted time vector
     delay_optdmd.fit(X_train_normalized, t=t_train_adjusted)
 
-    # 5. Get DMD components
+    # 6. Get DMD components
     modes = delay_optdmd.modes
     eigs = delay_optdmd.eigs
     amplitudes = delay_optdmd.amplitudes
@@ -128,8 +128,8 @@ def run_dmd_analysis(ds, output_dir):
     # 7. Reshape and compute spatial means
     n_spatial = X.shape[0]
     n_time = X.shape[1]
-    n_lat = len(lats)
-    n_lon = len(lons)
+    n_lat = len(ds.latitude.values)
+    n_lon = len(ds.longitude.values)
 
     X_dmd = X_dmd[:n_time, :n_spatial].T
 
@@ -137,13 +137,18 @@ def run_dmd_analysis(ds, output_dir):
     X_true_mean = np.average(
         np.average(
             X.reshape(n_spatial, n_time).reshape(-1, n_lat, n_lon),
-            weights=weights,
+            weights=np.cos(np.deg2rad(ds.latitude.values)),
             axis=1,
         ),
         axis=1,
     )
     X_dmd_mean = np.average(
-        np.average(X_dmd.reshape(-1, n_lat, n_lon), weights=weights, axis=1), axis=1
+        np.average(
+            X_dmd.reshape(-1, n_lat, n_lon),
+            weights=np.cos(np.deg2rad(ds.latitude.values)),
+            axis=1,
+        ),
+        axis=1,
     )
 
     # Print DMD diagnostics
@@ -173,15 +178,19 @@ def run_dmd_analysis(ds, output_dir):
         f"to {np.max(np.abs(amplitudes)):.6f}"
     )
 
-    # After computing means, calculate errors
-    rmse_train = np.sqrt(np.mean((X_true_mean[:T_train] - X_dmd_mean[:T_train]) ** 2))
-    rmse_test = np.sqrt(np.mean((X_true_mean[T_train:] - X_dmd_mean[T_train:]) ** 2))
+    # After computing means, calculate errors using real parts only
+    rmse_train = np.sqrt(
+        np.mean((np.real(X_true_mean[:T_train]) - np.real(X_dmd_mean[:T_train])) ** 2)
+    )
+    rmse_test = np.sqrt(
+        np.mean((np.real(X_true_mean[T_train:]) - np.real(X_dmd_mean[T_train:])) ** 2)
+    )
     print(f"\nRMSE (training): {rmse_train:.4f} K")
     print(f"RMSE (prediction): {rmse_test:.4f} K")
 
-    # Calculate spatial standard deviation at each timestep
-    X_true_std = np.std(X.reshape(-1, n_lat, n_lon), axis=(1, 2))
-    X_dmd_std = np.std(X_dmd.reshape(-1, n_lat, n_lon), axis=(1, 2))
+    # Calculate spatial standard deviation at each timestep (using real parts)
+    X_true_std = np.std(np.real(X.reshape(-1, n_lat, n_lon)), axis=(1, 2))
+    X_dmd_std = np.std(np.real(X_dmd.reshape(-1, n_lat, n_lon)), axis=(1, 2))
 
     # Create the plot with error bands
     plt.figure(figsize=(12, 8))
