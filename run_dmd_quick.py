@@ -159,21 +159,24 @@ def run_dmd_analysis(ds, output_dir):
     n_lat = len(lats)
     n_lon = len(lons)
 
-    X_dmd = X_dmd[:n_time, :n_spatial].T
+    X_dmd = X_dmd[:n_spatial, :n_time]  # Ensure correct orientation (space, time)
 
     # Compute weighted spatial means
     X_true_mean = np.average(
         np.average(
-            X.reshape(-1, n_lat, n_lon),  # Reshape original data
+            X.reshape(n_lat, n_lon, -1),  # Reshape to (lat, lon, time)
             weights=weights,
-            axis=1,
+            axis=0,
         ),
-        axis=1,
+        axis=0,
     )
 
-    # For X_dmd, we need to handle each timestep separately
-    X_dmd_reshaped = X_dmd.T.reshape(n_time, n_lat, n_lon)  # Reshape DMD results
-    X_dmd_mean = np.average(np.average(X_dmd_reshaped, weights=weights, axis=1), axis=1)
+    # For X_dmd, reshape correctly
+    X_dmd_reshaped = X_dmd.reshape(n_lat, n_lon, n_time)  # Reshape to (lat, lon, time)
+    X_dmd_mean = np.average(
+        np.average(X_dmd_reshaped, weights=weights, axis=0),
+        axis=0,
+    )
 
     # Print shapes for verification
     print("\nFinal shapes:")
@@ -301,6 +304,12 @@ def run_dmd_analysis(ds, output_dir):
     metadata.update(
         {"test_mse": float(test_error), "test_relative_error": float(relative_error)}
     )
+
+    # Add these diagnostic prints after DMD reconstruction
+    print("\nDetailed shape diagnostics:")
+    print(f"X_dmd shape after reconstruction: {X_dmd.shape}")
+    print(f"Expected shape: ({n_spatial}, {n_time})")
+    print(f"Product of dimensions: {n_lat * n_lon * n_time}")
 
     return timestamp
 
