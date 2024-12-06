@@ -138,11 +138,17 @@ def test_svd_on_era5(base_config, mock_era5_small, svd_type):
     data = apply_delay_embedding(data, parsed_config["delay_embedding"])
     U, s, V = svd_on_era5(data, parsed_config)
     n_samples = data.shape[0]
-    n_features = data.shape[1]
+    n_time = data.shape[1]
     n_components = parsed_config["n_components"]
-    assert U.shape == (n_samples, n_components)
-    assert s.shape == (n_components,)
-    assert V.shape == (n_components, n_features)
+    assert U.shape == (n_samples, n_components), f"""
+    Expected U to have shape ({n_samples}, {n_components}), got {U.shape}
+    """
+    assert s.shape == (n_components,), f"""
+    Expected s to have shape ({n_components},), got {s.shape}
+    """
+    assert V.shape == (n_components, n_time), f"""
+    Expected V to have shape ({n_components}, {n_time}), got {V.shape}
+    """
 
 
 def test_combine_svd_results(mock_era5_svd):
