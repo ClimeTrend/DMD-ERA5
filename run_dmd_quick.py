@@ -33,8 +33,6 @@ def run_dmd_analysis(ds, output_dir):
     )
     print(f"Level chosen: {level_value} hPa")
 
-    X = temp_data.values.reshape(temp_data.shape[0], -1).T  # Reshape to (space, time)
-
     # Add diagnostics
     print(f"Temperature range: {temp_data.min().values} to {temp_data.max().values} K")
     print(f"Temperature standard deviation: {temp_data.std().values} K")
@@ -49,7 +47,7 @@ def run_dmd_analysis(ds, output_dir):
     t = t.values
 
     print(f"Number of total hours: {len(t)}")
-    print(f"Number of days: {len(t) / 24}")
+    print(f"Number of days: {len(t)/24}")
     print(f"Number of total spatial points: {X.shape[0]}")
 
     # Get spatial dimensions
@@ -66,8 +64,8 @@ def run_dmd_analysis(ds, output_dir):
     t_train = t[:T_train]
 
     # 3. DMD parameters
-    svd_rank = 6  # Make sure it is not trying to optimise to everything
-    delay = 2
+    svd_rank = 10  # Increased from 6
+    delay = 4  # Increased from 2
 
     # Print the size of the variable
     print(f"size of X: {X_train.shape}")
@@ -108,7 +106,8 @@ def run_dmd_analysis(ds, output_dir):
 
     vander = np.vander(eigs, n_points, increasing=True)
     X_dmd_normalized = (modes @ np.diag(amplitudes) @ vander).T
-    X_dmd = (X_dmd_normalized * X_std.T) + X_mean.T
+    n_spatial = X.shape[0]
+    X_dmd = (X_dmd_normalized * X_std.T[:n_spatial]) + X_mean.T[:n_spatial]
 
     # 7. Reshape and compute spatial means
     n_spatial = X.shape[0]
@@ -131,39 +130,32 @@ def run_dmd_analysis(ds, output_dir):
         np.average(X_dmd.reshape(-1, n_lat, n_lon), weights=weights, axis=1), axis=1
     )
 
-    # After fitting, add diagnostics
+    # Print DMD diagnostics
     print("\nDMD Diagnostics:")
-    print(f"Number of modes: {modes.shape[1]}")
-    print(f"Eigenvalues range: {np.min(np.abs(eigs))} to {np.max(np.abs(eigs))}")
-    min_amplitude = np.min(np.abs(amplitudes))
-    max_amplitude = np.max(np.abs(amplitudes))
-    print(f"Amplitudes range: {min_amplitude} to {max_amplitude}")
-    print("\nEigenvalues:")
-    for i, eig in enumerate(eigs):
-        print(
-            f"Mode {i}: magnitude = {np.abs(eig):.6f}, "
-            f"frequency = {np.angle(eig)/(2*np.pi):.6f} "
-            f"cycles/timestep"
-        )
-
-    # After fitting, print detailed diagnostics
-    print("\nDetailed DMD Diagnostics:")
     print(f"Shape of modes: {modes.shape}")
+    print(f"Number of modes: {modes.shape[1]}")
     print(f"Shape of reconstructed data: {X_dmd.shape}")
-    print("\nMode energies:")
-    mode_energies = np.abs(amplitudes) * np.abs(modes).sum(axis=0)
-    for i, energy in enumerate(mode_energies):
-        print(f"Mode {i} energy: {energy:.2e}")
 
-    print("\nTemporal frequencies (in hours):")
+    # Mode energies and frequencies
+    print("\nMode details:")
+    mode_energies = np.abs(amplitudes) * np.abs(modes).sum(axis=0)
     dt = t[1] - t[0]  # time step in hours
-    for i, eig in enumerate(eigs):
+
+    for i, (energy, eig) in enumerate(zip(mode_energies, eigs, strict=False)):
         freq = np.angle(eig) / (2 * np.pi * dt)
         period = 1 / abs(freq) if freq != 0 else float("inf")
-        print(
-            f"Mode {i}: frequency = {freq:.6f} "
-            f"cycles/hour (period = {period:.1f} hours)"
-        )
+        print(f"Mode {i}:")
+        print(f"  Energy: {energy:.2e}")
+        print(f"  Frequency: {freq:.6f} cycles/hour " f"(period = {period:.1f} hours)")
+        print(f"  Magnitude: {np.abs(eig):.6f}")
+
+    # Print ranges
+    print("\nRanges:")
+    print(f"Eigenvalues: {np.min(np.abs(eigs)):.6f} " f"to {np.max(np.abs(eigs)):.6f}")
+    print(
+        f"Amplitudes: {np.min(np.abs(amplitudes)):.6f} "
+        f"to {np.max(np.abs(amplitudes)):.6f}"
+    )
 
     # 8. Create and save plot
     plt.figure(figsize=(10, 6))
