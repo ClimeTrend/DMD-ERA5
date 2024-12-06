@@ -71,9 +71,8 @@ def run_dmd_analysis(ds, output_dir):
         eig_constraints={"imag"},
         varpro_opts_dict={
             "verbose": True,
-            "max_iter": 100,  # Increase the number of iterations
+            "maxiter": 100,  # Increase the number of iterations
             "tol": 1e-6,
-            "max_iter_varpro": 100,  # Increase the number of iterations
         },
     )
     delay_optdmd = hankel_preprocessing(optdmd, d=delay)
