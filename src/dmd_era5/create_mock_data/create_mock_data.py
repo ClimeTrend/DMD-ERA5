@@ -7,6 +7,11 @@ import pandas as pd
 import xarray as xr
 
 from dmd_era5.logger import log_and_print, setup_logger
+from dmd_era5.slice_tools import (
+    apply_delay_embedding,
+    flatten_era5_variables,
+    standardize_data,
+)
 
 # Set up logger
 logger = setup_logger("MockData", "mock_data.log")
@@ -148,3 +153,60 @@ def _generate_variable_data(
         data = np.random.rand(*shape) * 100
 
     return data
+
+
+def create_mock_era5_svd(
+    start_datetime: datetime | str = "2020-01-01",
+    end_datetime: datetime | str = "2020-01-02",
+    variables: list[str] | None = None,
+    levels: list[int] | None = None,
+    mean_center: bool = True,
+    scale: bool = False,
+    delay_embedding: int = 2,
+    n_components: int = 6,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, xr.Coordinates]:
+    """
+    Create a mock dataset of SVD results on ERA5 for testing purposes.
+
+    Parameters
+    ----------
+    start_datetime : str or datetime
+        Start datetime of the dataset
+    end_datetime : str or datetime
+        End datetime of the dataset
+    variables : list of str
+        List of variable names to include. Defaults to ["temperature"].
+    levels : list of int
+        List of pressure levels. Defaults to [1000].
+    mean_center : bool
+        Whether to mean-center the data before SVD
+    scale : bool
+        Whether to scale the data before SVD
+    delay_embedding : int
+        Number of time lags to include in the delay embedding
+    n_components : int
+        Number of SVD components to retain
+
+    Returns
+    -------
+    tuple of np.ndarray and xr.Coordinates
+        Tuple of U, s, V, and coordinates of the data on which SVD was performed
+    """
+    # Create the mock ERA5 dataset
+    if variables is None:
+        variables = ["temperature"]
+    if levels is None:
+        levels = [1000]
+    ds = create_mock_era5(start_datetime, end_datetime, variables, levels)
+    if mean_center:
+        ds = standardize_data(ds, scale=scale)
+    da = flatten_era5_variables(ds)
+    da = apply_delay_embedding(da, delay_embedding)
+
+    # Perform SVD
+    U, s, V = np.linalg.svd(da.values, full_matrices=False)
+    U = U[:, :n_components]
+    s = s[:n_components]
+    V = V[:n_components, :]
+
+    return U, s, V, da.coords
