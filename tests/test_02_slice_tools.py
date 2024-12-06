@@ -106,6 +106,12 @@ def test_resample_era5_dataset():
 def test_standardize_data(data, request):
     """Test the standardize_data function."""
     mock_era5 = request.getfixturevalue(data)
+    assert not np.allclose(
+        mock_era5["temperature"].mean(dim="time"), 0
+    ), "Expected non-zero mean"
+    assert not np.allclose(
+        mock_era5["temperature"].std(dim="time"), 1
+    ), "Expected non-unity std"
     data_standardized = standardize_data(mock_era5)
     assert np.allclose(
         data_standardized["temperature"].mean(dim="time"), 0
@@ -114,6 +120,12 @@ def test_standardize_data(data, request):
         data_standardized["temperature"].std(dim="time"), 1
     ), "Expected std 1"
     if data == "mock_era5_temperature_wind":
+        assert not np.allclose(
+            mock_era5["u_component_of_wind"].mean(dim="time"), 0
+        ), "Expected non-zero mean"
+        assert not np.allclose(
+            mock_era5["u_component_of_wind"].std(dim="time"), 1
+        ), "Expected non-unity std"
         assert np.allclose(
             data_standardized["u_component_of_wind"].mean(dim="time"), 0
         ), "Expected mean 0"
