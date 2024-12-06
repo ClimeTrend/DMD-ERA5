@@ -47,7 +47,7 @@ def run_dmd_analysis(ds, output_dir):
     t_train = t[:T_train]
 
     # 3. DMD parameters
-    svd_rank = 100  # Make sure it is not trying to optimise to everything
+    svd_rank = -1  # Make sure it is not trying to optimise to everything
     delay = 2
 
     # Print the size of the variable
