@@ -173,9 +173,17 @@ def run_dmd_analysis(ds, output_dir):
         f"to {np.max(np.abs(amplitudes)):.6f}"
     )
 
-    # After computing means, calculate errors
-    rmse_train = np.sqrt(np.mean((X_true_mean[:T_train] - X_dmd_mean[:T_train]) ** 2))
-    rmse_test = np.sqrt(np.mean((X_true_mean[T_train:] - X_dmd_mean[T_train:]) ** 2))
+    # Ensure the data is real before RMSE calculation
+    X_true_mean_real = np.real(X_true_mean)
+    X_dmd_mean_real = np.real(X_dmd_mean)
+
+    # Calculate RMSE using real parts
+    rmse_train = np.sqrt(
+        np.mean((X_true_mean_real[:T_train] - X_dmd_mean_real[:T_train]) ** 2)
+    )
+    rmse_test = np.sqrt(
+        np.mean((X_true_mean_real[T_train:] - X_dmd_mean_real[T_train:]) ** 2)
+    )
     print(f"\nRMSE (training): {rmse_train:.4f} K")
     print(f"RMSE (prediction): {rmse_test:.4f} K")
 
