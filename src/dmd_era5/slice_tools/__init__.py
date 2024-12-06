@@ -1,4 +1,5 @@
 from dmd_era5.slice_tools.slice_tools import (
+    _apply_delay_embedding_np,
     apply_delay_embedding,
     flatten_era5_variables,
     resample_era5_dataset,
@@ -12,4 +13,5 @@ __all__ = [
     "standardize_data",
     "apply_delay_embedding",
     "flatten_era5_variables",
+    "_apply_delay_embedding_np",
 ]

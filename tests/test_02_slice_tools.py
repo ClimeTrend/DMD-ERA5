@@ -16,6 +16,7 @@ from dmd_era5 import (
     slice_era5_dataset,
     standardize_data,
 )
+from dmd_era5.slice_tools import _apply_delay_embedding_np as apply_delay_embedding_np
 
 
 @pytest.fixture
@@ -178,9 +179,9 @@ def test_standardize_data_different_dimension(data, request):
         ),
     ],
 )
-def test_apply_delay_embedding(X, d, expected):
+def test_apply_delay_embedding_np(X, d, expected):
     """Test the apply_delay_embedding function."""
-    output = apply_delay_embedding(X, d)
+    output = apply_delay_embedding_np(X, d)
     assert np.array_equal(output, expected), "Output matrix not as expected"
 
 
@@ -195,10 +196,10 @@ def test_apply_delay_embedding(X, d, expected):
         (np.zeros((3, 3, 3))),
     ],
 )
-def test_apply_delay_embedding_invalid_matrix(X):
+def test_apply_delay_embedding_np_invalid_matrix(X):
     """Test the apply_delay_embedding function with invalid input matrix."""
     with pytest.raises(ValueError, match="Input array must be 2D."):
-        apply_delay_embedding(X, 1)
+        apply_delay_embedding_np(X, 1)
 
 
 @pytest.mark.parametrize(
@@ -209,10 +210,10 @@ def test_apply_delay_embedding_invalid_matrix(X):
         (-1),
     ],
 )
-def test_apply_delay_embedding_invalid_delay(d):
+def test_apply_delay_embedding_np_invalid_delay(d):
     """Test the apply_delay_embedding function with invalid delay."""
     with pytest.raises(ValueError, match="Delay must be an integer greater than 0."):
-        apply_delay_embedding(np.zeros((3, 3)), d)
+        apply_delay_embedding_np(np.zeros((3, 3)), d)
 
 
 @pytest.mark.parametrize(
