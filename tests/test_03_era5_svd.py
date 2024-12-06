@@ -115,6 +115,7 @@ def test_config_parser_invalid_n_components(base_config, n_components):
 
 @pytest.mark.parametrize("svd_type", ["standard", "randomized"])
 def test_svd_on_era5(base_config, mock_era5_small, svd_type):
+    """Test the svd_on_era5 function."""
     config = base_config.copy()
     data = mock_era5_small
     config["svd_type"] = svd_type
