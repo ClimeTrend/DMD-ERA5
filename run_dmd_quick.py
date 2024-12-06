@@ -72,6 +72,11 @@ def run_dmd_analysis(ds, output_dir):
     # Print the size of the variable
     print(f"size of X: {X_train.shape}")
 
+    # Normalize the data before DMD
+    X_mean = np.mean(X_train, axis=1, keepdims=True)
+    X_std = np.std(X_train, axis=1, keepdims=True)
+    X_train_normalized = (X_train - X_mean) / X_std
+
     # 4. Fit DMD
     optdmd = BOPDMD(
         svd_rank=svd_rank,
@@ -90,7 +95,7 @@ def run_dmd_analysis(ds, output_dir):
     t_train_adjusted = t_train[delay - 1 :]
 
     # Fit DMD with adjusted time vector
-    delay_optdmd.fit(X_train, t=t_train_adjusted)
+    delay_optdmd.fit(X_train_normalized, t=t_train_adjusted)
 
     # 5. Get DMD components
     modes = delay_optdmd.modes
@@ -102,7 +107,8 @@ def run_dmd_analysis(ds, output_dir):
     t_eval = np.arange(n_points) * (t[1] - t[0])  # Use actual time step
 
     vander = np.vander(eigs, n_points, increasing=True)
-    X_dmd = np.abs(modes @ np.diag(amplitudes) @ vander).T
+    X_dmd_normalized = (modes @ np.diag(amplitudes) @ vander).T
+    X_dmd = (X_dmd_normalized * X_std.T) + X_mean.T
 
     # 7. Reshape and compute spatial means
     n_spatial = X.shape[0]
@@ -138,6 +144,25 @@ def run_dmd_analysis(ds, output_dir):
             f"Mode {i}: magnitude = {np.abs(eig):.6f}, "
             f"frequency = {np.angle(eig)/(2*np.pi):.6f} "
             f"cycles/timestep"
+        )
+
+    # After fitting, print detailed diagnostics
+    print("\nDetailed DMD Diagnostics:")
+    print(f"Shape of modes: {modes.shape}")
+    print(f"Shape of reconstructed data: {X_dmd.shape}")
+    print("\nMode energies:")
+    mode_energies = np.abs(amplitudes) * np.abs(modes).sum(axis=0)
+    for i, energy in enumerate(mode_energies):
+        print(f"Mode {i} energy: {energy:.2e}")
+
+    print("\nTemporal frequencies (in hours):")
+    dt = t[1] - t[0]  # time step in hours
+    for i, eig in enumerate(eigs):
+        freq = np.angle(eig) / (2 * np.pi * dt)
+        period = 1 / abs(freq) if freq != 0 else float("inf")
+        print(
+            f"Mode {i}: frequency = {freq:.6f} "
+            f"cycles/hour (period = {period:.1f} hours)"
         )
 
     # 8. Create and save plot
