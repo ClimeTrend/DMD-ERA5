@@ -173,15 +173,19 @@ def run_dmd_analysis(ds, output_dir):
         f"to {np.max(np.abs(amplitudes)):.6f}"
     )
 
-    # After computing means, calculate errors
-    rmse_train = np.sqrt(np.mean((X_true_mean[:T_train] - X_dmd_mean[:T_train]) ** 2))
-    rmse_test = np.sqrt(np.mean((X_true_mean[T_train:] - X_dmd_mean[T_train:]) ** 2))
+    # After computing means, calculate errors using real parts only
+    rmse_train = np.sqrt(
+        np.mean((np.real(X_true_mean[:T_train]) - np.real(X_dmd_mean[:T_train])) ** 2)
+    )
+    rmse_test = np.sqrt(
+        np.mean((np.real(X_true_mean[T_train:]) - np.real(X_dmd_mean[T_train:])) ** 2)
+    )
     print(f"\nRMSE (training): {rmse_train:.4f} K")
     print(f"RMSE (prediction): {rmse_test:.4f} K")
 
-    # Calculate spatial standard deviation at each timestep
-    X_true_std = np.std(X.reshape(-1, n_lat, n_lon), axis=(1, 2))
-    X_dmd_std = np.std(X_dmd.reshape(-1, n_lat, n_lon), axis=(1, 2))
+    # Calculate spatial standard deviation at each timestep (using real parts)
+    X_true_std = np.std(np.real(X.reshape(-1, n_lat, n_lon)), axis=(1, 2))
+    X_dmd_std = np.std(np.real(X_dmd.reshape(-1, n_lat, n_lon)), axis=(1, 2))
 
     # Create the plot with error bands
     plt.figure(figsize=(12, 8))
@@ -189,24 +193,26 @@ def run_dmd_analysis(ds, output_dir):
     # Plot means with spatial standard deviation bands
     plt.fill_between(
         t_eval,
-        X_true_mean - X_true_std,
-        X_true_mean + X_true_std,
+        np.real(X_true_mean - X_true_std),
+        np.real(X_true_mean + X_true_std),
         color="r",
         alpha=0.2,
         label="True variability",
     )
     plt.fill_between(
         t_eval,
-        X_dmd_mean - X_dmd_std,
-        X_dmd_mean + X_dmd_std,
+        np.real(X_dmd_mean - X_dmd_std),
+        np.real(X_dmd_mean + X_dmd_std),
         color="grey",
         alpha=0.2,
         label="DMD variability",
     )
 
     # Plot means as before
-    plt.plot(t_eval, X_true_mean, color="r", label="True values")
-    plt.plot(t_eval, X_dmd_mean, color="grey", label="DMD reconstruction/prediction")
+    plt.plot(t_eval, np.real(X_true_mean), color="r", label="True values")
+    plt.plot(
+        t_eval, np.real(X_dmd_mean), color="grey", label="DMD reconstruction/prediction"
+    )
     plt.axvline(t_eval[T_train], linestyle="--", color="k", label="Train/Test split")
 
     # Add RMSE values to plot
