@@ -69,7 +69,7 @@ def run_dmd_analysis(ds, output_dir):
     t_train = t[:T_train]
 
     # 3. DMD parameters
-    svd_rank = 10  # Increased from 6
+    svd_rank = 6  # Increased from 6
     delay = 2  # Increased from 2
 
     # Print the size of the variable
