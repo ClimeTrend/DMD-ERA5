@@ -1,12 +1,13 @@
 import logging
+import os
 import sys
 
 import numpy as np
 import xarray as xr
 from sklearn.utils.extmath import randomized_svd  # type: ignore[import-untyped]
 
+from dmd_era5 import retrieve_data_from_dvc
 from dmd_era5.core import (
-    config_parser,
     config_reader,
     log_and_print,
     setup_logger,
@@ -20,6 +21,72 @@ console_handler.setFormatter(
     logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 )
 logger.addHandler(console_handler)
+
+
+def retrieve_era5_slice(
+    parsed_config: dict, use_dvc: bool = False
+) -> tuple[xr.Dataset, bool]:
+    """
+    Given the configuration parameters, retrieve a slice of ERA5 data
+    from the working directory or DVC.
+
+    Args:
+        parsed_config (dict): The parsed configuration dictionary.
+        use_dvc (bool): Whether to use Data Version Control (DVC).
+
+    Returns:
+        xr.Dataset: The ERA5 slice.
+        bool: Whether the ERA5 slice was retrieved from DVC.
+    """
+
+    retrieved_from_dvc = False
+
+    def ensure_list(obj: str | list) -> list[str]:
+        return [obj] if isinstance(obj, str) else obj
+
+    def check_era5_slice(era5_ds: xr.Dataset) -> bool:
+        era5_ds_attrs = era5_ds.attrs
+        return (
+            sorted(parsed_config["variables"])
+            == sorted(
+                set(ensure_list(era5_ds_attrs["variables"]))
+                & set(parsed_config["variables"])
+            )
+            and sorted(parsed_config["levels"])
+            == sorted(
+                set(era5_ds_attrs["levels"].tolist()) & set(parsed_config["levels"])
+            )
+            and parsed_config["source_path"] == era5_ds_attrs["source_path"]
+        )
+
+    def retrieve_from_dvc() -> xr.Dataset:
+        log_and_print(logger, "Attempting to retrieve ERA5 slice from DVC...")
+        retrieve_data_from_dvc(parsed_config, data_type="era5_slice")
+        log_and_print(
+            logger, f"ERA5 slice retrieved from DVC: {parsed_config['era5_slice_path']}"
+        )
+        return xr.open_dataset(parsed_config["era5_slice_path"])
+
+    if os.path.exists(parsed_config["era5_slice_path"]):
+        log_and_print(logger, "ERA5 slice found in working directory.")
+        era5_ds = xr.open_dataset(parsed_config["era5_slice_path"])
+        if check_era5_slice(era5_ds):
+            log_and_print(logger, "ERA5 slice matches configuration.")
+            return era5_ds, retrieved_from_dvc
+        log_and_print(logger, "ERA5 slice does not match configuration.")
+        if use_dvc:
+            era5_ds = retrieve_from_dvc()
+            retrieved_from_dvc = True
+            return era5_ds, retrieved_from_dvc
+        msg = "ERA5 slice in working directory does not match configuration."
+        raise ValueError(msg)
+    log_and_print(logger, "ERA5 slice not found in working directory.")
+    if use_dvc:
+        era5_ds = retrieve_from_dvc()
+        retrieved_from_dvc = True
+        return era5_ds, retrieved_from_dvc
+    msg = "ERA5 slice not found in working directory."
+    raise FileNotFoundError(msg)
 
 
 def svd_on_era5(
@@ -140,17 +207,8 @@ def main(
         tuple[bool, bool]: A tuple of two booleans indicating whether the SVD results
         were added to DVC and whether they were retrieved from DVC.
     """
-    added_to_dvc = False
-    retrieved_from_dvc = False
+    return (False, False)
 
-    try:
-        parsed_config = config_parser(config, section="era5-svd", logger=logger)
 
-        if use_dvc:
-            pass
-        else:
-            pass
-    except Exception as e:
-        log_and_print(logger, f"ERA5 SVD process failed: {e}", level="error")
-
-    return added_to_dvc, retrieved_from_dvc
+if __name__ == "__main__":
+    main()
