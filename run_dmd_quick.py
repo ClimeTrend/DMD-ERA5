@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from pydmd import BOPDMD
-
-# from pydmd.preprocessing import hankel_preprocessing
+from pydmd.plotter import plot_summary
+from pydmd.preprocessing import hankel_preprocessing
 
 
 def run_dmd_analysis(ds, output_dir):
@@ -71,7 +71,7 @@ def run_dmd_analysis(ds, output_dir):
 
     # 3. DMD parameters
     svd_rank = 3  # Increased from 6
-    delay = 0  # Increased from 2
+    delay = 1
 
     # Print the size of the variable
     print(f"size of X: {X_train.shape}")
@@ -79,17 +79,13 @@ def run_dmd_analysis(ds, output_dir):
     # 4. Fit DMD
     optdmd = BOPDMD(
         svd_rank=svd_rank,
-        num_trials=0,
         varpro_opts_dict={
             "verbose": True,
             "maxiter": 100,  # Increase the number of iterations
             "tol": 1e-6,
         },
     )
-    # delay_optdmd = hankel_preprocessing(optdmd, d=delay)
-    # delay_optdmd = hankel_preprocessing(optdmd, d=delay)
-
-    delay_optdmd = optdmd
+    delay_optdmd = hankel_preprocessing(optdmd, d=delay)
 
     # Adjust time vector for Hankel preprocessing
     # t_train_adjusted = t_train[delay - 1 :]
@@ -291,11 +287,22 @@ def run_dmd_analysis(ds, output_dir):
 
     print(f"Plot saved as {plot_filename}")
 
+    # Generate and save summary plot
+    plt.figure(figsize=(8, 8))
+    plot_summary(
+        delay_optdmd, x=X_train, t=t_train_adjusted, d=delay, index_modes=(0, 1, 2)
+    )
+    plt.title("DMD Mode Summary")
+    summary_plot_filename = os.path.join(output_dir, f"dmd_summary_{timestamp}.png")
+    plt.savefig(summary_plot_filename)
+    plt.close()
+    print(f"Summary plot saved as {summary_plot_filename}")
+
     # 9. Save DMD results as numpy arrays
-    np.save(os.path.join(output_dir, f"dmd_modes_{timestamp}.npy"), modes)
-    np.save(os.path.join(output_dir, f"dmd_eigs_{timestamp}.npy"), eigs)
-    np.save(os.path.join(output_dir, f"dmd_amplitudes_{timestamp}.npy"), amplitudes)
-    np.save(os.path.join(output_dir, f"dmd_prediction_{timestamp}.npy"), X_dmd)
+    # np.save(os.path.join(output_dir, f"dmd_modes_{timestamp}.npy"), modes)
+    # np.save(os.path.join(output_dir, f"dmd_eigs_{timestamp}.npy"), eigs)
+    # np.save(os.path.join(output_dir, f"dmd_amplitudes_{timestamp}.npy"), amplitudes)
+    # np.save(os.path.join(output_dir, f"dmd_prediction_{timestamp}.npy"), X_dmd)
 
     # 10. Save metadata
     metadata = {
