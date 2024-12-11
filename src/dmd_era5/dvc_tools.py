@@ -217,12 +217,22 @@ def retrieve_data_from_dvc(
         with GitRepo(here()) as repo:
             repo.git.checkout(commit_hash, dvc_file_path)
         with DvcRepo(here()) as repo:
-            if os.path.exists(os.path.join(here(), ".dvc/cache")):
+            md5_hash_start = md5_hash_keep[:2]
+            md5_hash_end = md5_hash_keep[2:]
+            # Check if the file version is in the local DVC cache
+            if os.path.exists(
+                os.path.join(
+                    here(), ".dvc/cache/files/md5", md5_hash_start, md5_hash_end
+                )
+            ):
                 checked_out_files = repo.checkout(targets=[dvc_file_path])
                 print("Checked out files:", checked_out_files)
             else:
                 print(
-                    "No DVC cache found. Attempting to fetch data from default remote."
+                    """
+                    Data not found in local DVC cache.
+                    Attempting to fetch from default remote.
+                    """
                 )
                 remote_exists, data_fetched = fetch_data_from_default_remote(
                     repo, targets=[dvc_file_path]
