@@ -70,7 +70,7 @@ def run_dmd_analysis(ds, output_dir):
 
     # 3. DMD parameters
     svd_rank = 3  # Increased from 6
-    delay = 0  # Increased from 2
+    delay = 1  # Increased from 2
 
     # Print the size of the variable
     print(f"size of X: {X_train.shape}")
