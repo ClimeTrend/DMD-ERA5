@@ -70,7 +70,7 @@ def run_dmd_analysis(ds, output_dir):
 
     # 3. DMD parameters
     svd_rank = 3  # Increased from 6
-    delay = 1  # Increased from 2
+    delay = 0  # Increased from 2
 
     # Print the size of the variable
     print(f"size of X: {X_train.shape}")
@@ -85,10 +85,12 @@ def run_dmd_analysis(ds, output_dir):
             "tol": 1e-6,
         },
     )
-    delay_optdmd = hankel_preprocessing(optdmd, d=delay)
+    # delay_optdmd = hankel_preprocessing(optdmd, d=delay)
+    delay_optdmd = hankel_preprocessing(optdmd)
 
     # Adjust time vector for Hankel preprocessing
-    t_train_adjusted = t_train[delay - 1 :]
+    # t_train_adjusted = t_train[delay - 1 :]
+    t_train_adjusted = t_train
 
     # Fit DMD with adjusted time vector
     delay_optdmd.fit(X_train, t=t_train_adjusted)
