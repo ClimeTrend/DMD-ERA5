@@ -1,4 +1,5 @@
 from dmd_era5.era5_svd.era5_svd import (
+    add_config_attributes,
     combine_svd_results,
     retrieve_era5_slice,
     retrieve_svd_results,
@@ -10,4 +11,5 @@ __all__ = [
     "combine_svd_results",
     "retrieve_era5_slice",
     "retrieve_svd_results",
+    "add_config_attributes",
 ]
