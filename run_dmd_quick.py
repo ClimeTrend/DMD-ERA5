@@ -86,7 +86,7 @@ def run_dmd_analysis(ds, output_dir):
         },
     )
     # delay_optdmd = hankel_preprocessing(optdmd, d=delay)
-    delay_optdmd = hankel_preprocessing(optdmd)
+    delay_optdmd = hankel_preprocessing(optdmd, d=delay)
 
     # Adjust time vector for Hankel preprocessing
     # t_train_adjusted = t_train[delay - 1 :]
