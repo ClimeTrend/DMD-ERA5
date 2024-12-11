@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from pydmd import BOPDMD
-from pydmd.plotter import plot_summary
 from pydmd.preprocessing import hankel_preprocessing
 
 
@@ -286,17 +285,6 @@ def run_dmd_analysis(ds, output_dir):
     plt.close()
 
     print(f"Plot saved as {plot_filename}")
-
-    # Generate and save summary plot
-    plt.figure(figsize=(8, 8))
-    plot_summary(
-        delay_optdmd, x=X_train, t=t_train_adjusted, d=delay, index_modes=(0, 1, 2)
-    )
-    plt.title("DMD Mode Summary")
-    summary_plot_filename = os.path.join(output_dir, f"dmd_summary_{timestamp}.png")
-    plt.savefig(summary_plot_filename)
-    plt.close()
-    print(f"Summary plot saved as {summary_plot_filename}")
 
     # 9. Save DMD results as numpy arrays
     # np.save(os.path.join(output_dir, f"dmd_modes_{timestamp}.npy"), modes)
