@@ -69,8 +69,8 @@ def run_dmd_analysis(ds, output_dir):
     t_train = t[:T_train]
 
     # 3. DMD parameters
-    svd_rank = 6  # Increased from 6
-    delay = 2  # Increased from 2
+    svd_rank = 3  # Increased from 6
+    delay = 0  # Increased from 2
 
     # Print the size of the variable
     print(f"size of X: {X_train.shape}")
@@ -79,8 +79,6 @@ def run_dmd_analysis(ds, output_dir):
     optdmd = BOPDMD(
         svd_rank=svd_rank,
         num_trials=0,
-        use_proj=True,
-        eig_constraints={"imag"},
         varpro_opts_dict={
             "verbose": True,
             "maxiter": 100,  # Increase the number of iterations
