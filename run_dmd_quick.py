@@ -35,6 +35,21 @@ def run_dmd_analysis(ds, output_dir):
     )
     print(f"Level chosen: {level_value} hPa")
 
+    # Downsample spatially
+    print(f"Original data shape: {temp_data.shape}")
+    print(
+        f"Original resolution: "
+        f"{temp_data.latitude.diff('latitude').values[0]:.2f} degrees"
+    )
+    temp_data = temp_data.isel(
+        latitude=slice(None, None, 2), longitude=slice(None, None, 2)
+    )
+    print(f"Downsampled data shape: {temp_data.shape}")
+    print(
+        f"Downsampled resolution: "
+        f"{temp_data.latitude.diff('latitude').values[0]:.2f} degrees"
+    )
+
     # Add diagnostics
     print(f"Temperature range: {temp_data.min().values} to {temp_data.max().values} K")
     print(f"Temperature standard deviation: {temp_data.std().values} K")
@@ -45,18 +60,20 @@ def run_dmd_analysis(ds, output_dir):
     print(f"X matrix standard deviation: {X.std()}")
 
     # Normalize the data
-    # X_mean = np.mean(X, axis=1, keepdims=True)
-    # X_std = np.std(X, axis=1, keepdims=True)
-    # X_std[X_std == 0] = 1
-    # X_normalized = (X - X_mean) / X_std
+    X_mean = np.mean(X, axis=1, keepdims=True)
+    X_std = np.std(X, axis=1, keepdims=True)
+    X_std[X_std == 0] = 1
+    X_normalized = (X - X_mean) / X_std
 
-    # print(f"Normalization statistics:")
-    # print(f"Mean range: {X_mean.min():.2f} to {X_mean.max():.2f}")
-    # print(f"Std range: {X_std.min():.2f} to {X_std.max():.2f}")
-    # print(f"Normalized data range: {X_normalized.min():.2f} "
-    #       f"to {X_normalized.max():.2f}")
+    print("Normalization statistics:")
+    print(f"Mean range: {X_mean.min():.2f} to {X_mean.max():.2f}")
+    print(f"Std range: {X_std.min():.2f} to {X_std.max():.2f}")
+    print(
+        f"Normalized data range: {X_normalized.min():.2f} "
+        f"to {X_normalized.max():.2f}"
+    )
 
-    X_normalized = X
+    # X_normalized = X
 
     # Convert time to hours since start
     t = (ds.time - ds.time[0]) / np.timedelta64(1, "h")
@@ -121,8 +138,8 @@ def run_dmd_analysis(ds, output_dir):
     X_dmd_normalized = (modes @ np.diag(amplitudes) @ vander).T
 
     # Reshape and denormalize
-    # X_dmd_normalized = X_dmd_normalized[:, :n_spatial]
-    # X_dmd = (X_dmd_normalized * X_std.T) + X_mean.T
+    X_dmd_normalized = X_dmd_normalized[:, :n_spatial]
+    X_dmd = (X_dmd_normalized * X_std.T) + X_mean.T
 
     X_dmd = X_dmd_normalized
 
