@@ -74,16 +74,10 @@ def run_dmd_analysis(ds, output_dir):
 
     # Print the size of the variable
     print(f"size of X: {X_train.shape}")
+    print(f"size of t: {t_train.shape}")
 
     # 4. Fit DMD
-    optdmd = BOPDMD(
-        svd_rank=svd_rank,
-        varpro_opts_dict={
-            "verbose": True,
-            "maxiter": 100,  # Increase the number of iterations
-            "tol": 1e-6,
-        },
-    )
+    optdmd = BOPDMD(svd_rank=svd_rank)
     delay_optdmd = hankel_preprocessing(optdmd, d=delay)
 
     # Adjust time vector for Hankel preprocessing
