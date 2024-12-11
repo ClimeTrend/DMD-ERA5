@@ -11,7 +11,7 @@ from pyprojroot import here
 
 from dmd_era5 import config_parser
 from dmd_era5.create_mock_data import create_mock_era5, create_mock_era5_svd
-from dmd_era5.era5_svd import combine_svd_results, svd_on_era5
+from dmd_era5.era5_svd import combine_svd_results, retrieve_era5_slice, svd_on_era5
 from dmd_era5.slice_tools import (
     apply_delay_embedding,
     flatten_era5_variables,
@@ -202,3 +202,15 @@ def test_combine_svd_results(mock_era5_svd):
     assert sorted(da.V.coords.keys()) == sorted(["components", "time"]), """
     Expected V to have coords ['components', 'time']
     """
+
+
+def test_retrieve_era5_slice_without_dvc(base_config):
+    """
+    Test the retrieve_era5_slice returns an error
+    if the requested data is not found in the working directory.
+    """
+    parsed_config = config_parser(base_config, section="era5-svd")
+    with pytest.raises(
+        FileNotFoundError, match="ERA5 slice not found in working directory"
+    ):
+        retrieve_era5_slice(parsed_config, use_dvc=False)
