@@ -89,6 +89,69 @@ def retrieve_era5_slice(
     raise FileNotFoundError(msg)
 
 
+def retrieve_svd_results(
+    parsed_config: dict, use_dvc: bool = False
+) -> tuple[xr.Dataset, bool]:
+    """
+    Given the configuration parameters, retrieve SVD results from the working directory
+    or DVC.
+
+    Args:
+        parsed_config (dict): The parsed configuration dictionary.
+        use_dvc (bool): Whether to use Data Version Control (DVC).
+
+    Returns:
+        xr.Dataset: The SVD results.
+        bool: Whether the SVD results were retrieved from DVC.
+    """
+
+    retrieved_from_dvc = False
+
+    def ensure_list(obj: str | list) -> list[str]:
+        return [obj] if isinstance(obj, str) else obj
+
+    def check_svd_results(svd_ds: xr.Dataset) -> bool:
+        svd_ds_attrs = svd_ds.attrs
+        return (
+            parsed_config["source_path"] == svd_ds_attrs["source_path"]
+            and parsed_config["n_components"] == svd_ds_attrs["n_components"]
+            and parsed_config["variables"] == ensure_list(svd_ds_attrs["variables"])
+            and parsed_config["levels"] == svd_ds_attrs["levels"].tolist()
+            and parsed_config["mean_center"] == svd_ds_attrs["mean_center"]
+            and parsed_config["scale"] == svd_ds_attrs["scale"]
+            and parsed_config["delay_embedding"] == svd_ds_attrs["delay_embedding"]
+        )
+
+    def retrieve_from_dvc() -> xr.Dataset:
+        log_and_print(logger, "Attempting to retrieve SVD results from DVC...")
+        retrieve_data_from_dvc(parsed_config, data_type="era5_svd")
+        log_and_print(
+            logger, f"SVD results retrieved from DVC: {parsed_config['svd_path']}"
+        )
+        return xr.open_dataset(parsed_config["svd_path"])
+
+    if os.path.exists(parsed_config["svd_path"]):
+        log_and_print(logger, "SVD results found in working directory.")
+        svd_ds = xr.open_dataset(parsed_config["svd_path"])
+        if check_svd_results(svd_ds):
+            log_and_print(logger, "SVD results match configuration.")
+            return svd_ds, retrieved_from_dvc
+        log_and_print(logger, "SVD results do not match configuration.")
+        if use_dvc:
+            svd_ds = retrieve_from_dvc()
+            retrieved_from_dvc = True
+            return svd_ds, retrieved_from_dvc
+        msg = "SVD results in working directory do not match configuration."
+        raise ValueError(msg)
+    log_and_print(logger, "SVD results not found in working directory.")
+    if use_dvc:
+        svd_ds = retrieve_from_dvc()
+        retrieved_from_dvc = True
+        return svd_ds, retrieved_from_dvc
+    msg = "SVD results not found in working directory."
+    raise FileNotFoundError(msg)
+
+
 def svd_on_era5(
     da: xr.DataArray, parsed_config: dict
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
