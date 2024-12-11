@@ -339,7 +339,7 @@ if __name__ == "__main__":
 
     # Path to your ERA5 data
     data_path = os.path.join(
-        current_dir, "data", "era5_download", "2018-01-01T00_2020-01-01T00_2w.nc"
+        current_dir, "data", "era5_download", "2018-01-01T00_2020-01-01T00_1d.nc"
     )
     output_dir = os.path.join(current_dir, "data", "dmd_results")
 
