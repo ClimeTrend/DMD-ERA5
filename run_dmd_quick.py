@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 from pydmd import BOPDMD
-from pydmd.preprocessing import hankel_preprocessing
+
+# from pydmd.preprocessing import hankel_preprocessing
 
 
 def run_dmd_analysis(ds, output_dir):
@@ -86,7 +87,9 @@ def run_dmd_analysis(ds, output_dir):
         },
     )
     # delay_optdmd = hankel_preprocessing(optdmd, d=delay)
-    delay_optdmd = hankel_preprocessing(optdmd, d=delay)
+    # delay_optdmd = hankel_preprocessing(optdmd, d=delay)
+
+    delay_optdmd = optdmd
 
     # Adjust time vector for Hankel preprocessing
     # t_train_adjusted = t_train[delay - 1 :]
