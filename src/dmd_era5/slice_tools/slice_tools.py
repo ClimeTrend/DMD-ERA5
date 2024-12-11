@@ -327,3 +327,44 @@ def flatten_era5_variables(era5_ds: xr.Dataset) -> xr.DataArray:
     dataarray.attrs["space_coords"] = spatial_stack_order
 
     return dataarray
+
+
+def space_coord_to_level_lat_lon(
+    ds: xr.Dataset,
+) -> xr.Dataset:
+    """
+    Convert the "space" coordinate, consisting of tuples of level,
+    latitude, and longitude, to separate coordinates for "level",
+    "latitude", and "longitude". This is done before saving to NetCDF,
+    as NetCDF does not support coordinate variables as arrays of
+    tuples or sequences.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        The input dataset with a "space" coordinate.
+
+    Returns
+    -------
+    xr.Dataset
+        The dataset with separate coordinates for level, latitude, and longitude.
+        The space coordinate is converted to a 1D array of increasing integers.
+    """
+
+    if "space" not in ds.coords:
+        msg = "Input dataset must have a 'space' coordinate."
+        raise ValueError(msg)
+
+    space_data = ds.coords["space"].values
+    level_data = np.array([space[0] for space in space_data])
+    lat_data = np.array([space[1] for space in space_data])
+    lon_data = np.array([space[2] for space in space_data])
+
+    space_data = np.array(range(len(space_data)), dtype=int)
+    ds.coords["space"] = space_data
+
+    return ds.assign_coords(
+        level=("space", level_data),
+        latitude=("space", lat_data),
+        longitude=("space", lon_data),
+    )
