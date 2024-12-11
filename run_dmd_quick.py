@@ -22,8 +22,10 @@ def run_dmd_analysis(ds, output_dir):
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
-    # 1. Prepare the data
-    temp_data = ds["temperature"].isel(level=0)  # Select first level
+    # SECTION 1: Data Preparation
+    # ---------------------------
+    # Extract temperature data at the first level
+    temp_data = ds["temperature"].isel(level=0)
 
     # Handle both scalar and array level values
     level_value = (
@@ -37,17 +39,26 @@ def run_dmd_analysis(ds, output_dir):
     print(f"Temperature range: {temp_data.min().values} to {temp_data.max().values} K")
     print(f"Temperature standard deviation: {temp_data.std().values} K")
 
-    # After reshaping, check X matrix
-    X = temp_data.values.reshape(temp_data.shape[0], -1).T  # Reshape to (space, time)
+    # Reshape data for DMD analysis
+    X = temp_data.values.reshape(temp_data.shape[0], -1).T
     print(f"X matrix range: {X.min()} to {X.max()}")
     print(f"X matrix standard deviation: {X.std()}")
 
-    # Normalize the data before splitting
-    X_mean = np.mean(X, axis=1, keepdims=True)
-    X_std = np.std(X, axis=1, keepdims=True)
-    X_normalized = (X - X_mean) / X_std
+    # Normalize the data
+    # X_mean = np.mean(X, axis=1, keepdims=True)
+    # X_std = np.std(X, axis=1, keepdims=True)
+    # X_std[X_std == 0] = 1
+    # X_normalized = (X - X_mean) / X_std
 
-    # Get time vector from xarray and convert to hours since start
+    # print(f"Normalization statistics:")
+    # print(f"Mean range: {X_mean.min():.2f} to {X_mean.max():.2f}")
+    # print(f"Std range: {X_std.min():.2f} to {X_std.max():.2f}")
+    # print(f"Normalized data range: {X_normalized.min():.2f} "
+    #       f"to {X_normalized.max():.2f}")
+
+    X_normalized = X
+
+    # Convert time to hours since start
     t = (ds.time - ds.time[0]) / np.timedelta64(1, "h")
     t = t.values
 
@@ -60,75 +71,72 @@ def run_dmd_analysis(ds, output_dir):
     lons = ds.longitude.values
     weights = np.cos(np.deg2rad(lats))
 
-    # 2. Set up train/test split
+    # SECTION 2: Train/Test Split
+    # ---------------------------
     train_frac = 0.8
     T_train = int(len(t) * train_frac)
 
-    # Split data
+    # Split data into training and testing sets
     X_train = X_normalized[:, :T_train]
     t_train = t[:T_train]
 
-    # 3. DMD parameters
+    # SECTION 3: DMD Setup and Fitting
+    # --------------------------------
     svd_rank = 3  # Increased from 6
     delay = 1
 
-    # Print the size of the variable
     print(f"size of X: {X_train.shape}")
     print(f"size of t: {t_train.shape}")
 
-    # 4. Fit DMD
+    # Initialize and fit DMD model
     optdmd = BOPDMD(svd_rank=svd_rank)
     delay_optdmd = hankel_preprocessing(optdmd, d=delay)
 
     # Adjust time vector for Hankel preprocessing
     t_train_adjusted = t_train[delay - 1 :]
-    # t_train_adjusted = t_train
 
     # Fit DMD with adjusted time vector
     delay_optdmd.fit(X_train, t=t_train_adjusted)
 
-    # 5. Get DMD components
+    # SECTION 4: DMD Components and Reconstruction
+    # --------------------------------------------
     modes = delay_optdmd.modes
     eigs = delay_optdmd.eigs
     amplitudes = delay_optdmd.amplitudes
 
-    # Get spatial dimensions
     n_spatial = X.shape[0]
 
     print("\nShape diagnostics:")
     print(f"Original X shape: {X.shape}")
     print(f"Modes shape: {modes.shape}")
-    print(f"X_mean shape: {X_mean.shape}")
-    print(f"X_std shape: {X_std.shape}")
+    # print(f"X_mean shape: {X_mean.shape}")
+    # print(f"X_std shape: {X_std.shape}")
 
     # Create time vector and compute DMD solution
     n_points = X.shape[1]
-    t_eval = np.arange(n_points) * (t[1] - t[0])  # Use actual time step
+    t_eval = np.arange(n_points) * (t[1] - t[0])
 
     # Compute DMD reconstruction
     vander = np.vander(eigs, n_points, increasing=True)
     X_dmd_normalized = (modes @ np.diag(amplitudes) @ vander).T
 
-    # Reshape X_dmd_normalized to match original spatial dimensions
-    X_dmd_normalized = X_dmd_normalized[
-        :, :n_spatial
-    ]  # Truncate to original spatial dimensions
+    # Reshape and denormalize
+    # X_dmd_normalized = X_dmd_normalized[:, :n_spatial]
+    # X_dmd = (X_dmd_normalized * X_std.T) + X_mean.T
 
-    # Now denormalize
-    X_dmd = (X_dmd_normalized * X_std.T) + X_mean.T
+    X_dmd = X_dmd_normalized
 
-    # 7. Reshape and compute spatial means
-    n_spatial = X.shape[0]
-    n_time = X.shape[1]
+    # SECTION 5: Spatial Means and Diagnostics
+    # ----------------------------------------
     n_lat = len(lats)
     n_lon = len(lons)
 
-    X_dmd = X_dmd[:n_time, :n_spatial].T
+    X_dmd = X_dmd[:n_points, :n_spatial].T
 
     # Compute weighted spatial means
     X_true_mean = np.average(
         np.average(
-            X.reshape(n_spatial, n_time).reshape(-1, n_lat, n_lon),
+            X.reshape(n_spatial, n_points).reshape(-1, n_lat, n_lon),
             weights=weights,
             axis=1,
         ),
@@ -147,7 +155,7 @@ def run_dmd_analysis(ds, output_dir):
     # Mode energies and frequencies
     print("\nMode details:")
     mode_energies = np.abs(amplitudes) * np.abs(modes).sum(axis=0)
-    dt = t[1] - t[0]  # time step in hours
+    dt = t[1] - t[0]
 
     for i, (energy, eig) in enumerate(zip(mode_energies, eigs, strict=False)):
         freq = np.angle(eig) / (2 * np.pi * dt)
@@ -183,10 +191,10 @@ def run_dmd_analysis(ds, output_dir):
     X_true_std = np.std(X.reshape(-1, n_lat, n_lon), axis=(1, 2))
     X_dmd_std = np.std(X_dmd.reshape(-1, n_lat, n_lon), axis=(1, 2))
 
-    # Create the plot with error bands
-    plt.figure(figsize=(12, 8))
-
+    # SECTION 6: Plotting
+    # -------------------
     # Plot means with spatial standard deviation bands
+    plt.figure(figsize=(12, 8))
     plt.fill_between(
         t_eval,
         X_true_mean - X_true_std,
@@ -203,8 +211,6 @@ def run_dmd_analysis(ds, output_dir):
         alpha=0.2,
         label="DMD variability",
     )
-
-    # Plot means as before
     plt.plot(t_eval, X_true_mean, color="r", label="True values")
     plt.plot(t_eval, X_dmd_mean, color="grey", label="DMD reconstruction/prediction")
     plt.axvline(t_eval[T_train], linestyle="--", color="k", label="Train/Test split")
@@ -235,18 +241,14 @@ def run_dmd_analysis(ds, output_dir):
     plt.savefig(os.path.join(output_dir, f"dmd_prediction_{timestamp}.png"))
     plt.close()
 
-    #  New plot at specific location
-
-    # Reshape X and X_dmd to their original spatial dimensions
+    # Plot at specific location
     n_spatial = len(lats) * len(lons)
     X_reshaped = X.reshape(n_spatial, -1)
     X_dmd_reshaped = X_dmd.reshape(n_spatial, -1)
 
-    # Randomly select a latitude and longitude index using numpy
+    # Randomly select a latitude and longitude index
     lat_index = np.random.randint(0, len(lats))
     lon_index = np.random.randint(0, len(lons))
-
-    # Calculate the flat index for the selected latitude and longitude
     flat_index = lat_index * len(lons) + lon_index
 
     # Extract true and predicted data for the randomly chosen location
@@ -280,11 +282,11 @@ def run_dmd_analysis(ds, output_dir):
 
     print(f"Plot saved as {plot_filename}")
 
-    # ... existing code ...
-
+    # SECTION 7: Higher Rank DMD Analysis
+    # -----------------------------------
     # Fit DMD with a higher rank
     dmd_too_many = BOPDMD(svd_rank=20)
-    dmd_too_many.fit(X.T, t=t)
+    dmd_too_many.fit(X_train, t=t_train)
 
     # Sort amplitudes in descending order
     example_order = np.argsort(-np.abs(dmd_too_many.amplitudes))
@@ -306,22 +308,22 @@ def run_dmd_analysis(ds, output_dir):
 
     print(f"Amplitudes plot saved as {amplitudes_plot_filename}")
 
-    # ... existing code ...
-
-    # 9. Save DMD results as numpy arrays
+    # SECTION 8: Save Results
+    # -----------------------
+    # Save DMD results as numpy arrays
     # np.save(os.path.join(output_dir, f"dmd_modes_{timestamp}.npy"), modes)
     # np.save(os.path.join(output_dir, f"dmd_eigs_{timestamp}.npy"), eigs)
     # np.save(os.path.join(output_dir, f"dmd_amplitudes_{timestamp}.npy"), amplitudes)
     # np.save(os.path.join(output_dir, f"dmd_prediction_{timestamp}.npy"), X_dmd)
 
-    # 10. Save metadata
+    # Save metadata
     metadata = {
         "train_frac": train_frac,
         "svd_rank": svd_rank,
         "delay": delay,
         "n_modes": modes.shape[1],
         "spatial_shape": (n_lat, n_lon),
-        "temporal_points": n_time,
+        "temporal_points": n_points,
         "train_points": T_train,
     }
     np.save(os.path.join(output_dir, f"dmd_metadata_{timestamp}.npy"), metadata)
@@ -330,10 +332,12 @@ def run_dmd_analysis(ds, output_dir):
 
 
 if __name__ == "__main__":
+    # SECTION 9: Main Execution
+    # -------------------------
     # Get the current directory
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Path to your ERA5 data (adjust these paths based on your HPC structure)
+    # Path to your ERA5 data
     data_path = os.path.join(
         current_dir, "data", "era5_download", "2018-01-01T00_2020-01-01T00_2w.nc"
     )
