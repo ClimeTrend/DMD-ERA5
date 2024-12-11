@@ -81,8 +81,8 @@ def run_dmd_analysis(ds, output_dir):
     delay_optdmd = hankel_preprocessing(optdmd, d=delay)
 
     # Adjust time vector for Hankel preprocessing
-    # t_train_adjusted = t_train[delay - 1 :]
-    t_train_adjusted = t_train
+    t_train_adjusted = t_train[delay - 1 :]
+    # t_train_adjusted = t_train
 
     # Fit DMD with adjusted time vector
     delay_optdmd.fit(X_train, t=t_train_adjusted)
@@ -279,6 +279,34 @@ def run_dmd_analysis(ds, output_dir):
     plt.close()
 
     print(f"Plot saved as {plot_filename}")
+
+    # ... existing code ...
+
+    # Fit DMD with a higher rank
+    dmd_too_many = BOPDMD(svd_rank=20)
+    dmd_too_many.fit(X.T, t=t)
+
+    # Sort amplitudes in descending order
+    example_order = np.argsort(-np.abs(dmd_too_many.amplitudes))
+    example_amplitudes = np.abs(dmd_too_many.amplitudes[example_order])
+
+    # Create and save the plot
+    plt.figure(figsize=(6, 2))
+    plt.scatter(np.arange(20), example_amplitudes)
+    plt.ylabel(r"$\beta$")
+    plt.xlabel("DMD rank")
+    plt.title("DMD Amplitudes for Higher Rank")
+
+    # Save the plot
+    amplitudes_plot_filename = os.path.join(
+        output_dir, f"dmd_amplitudes_{timestamp}.png"
+    )
+    plt.savefig(amplitudes_plot_filename)
+    plt.close()
+
+    print(f"Amplitudes plot saved as {amplitudes_plot_filename}")
+
+    # ... existing code ...
 
     # 9. Save DMD results as numpy arrays
     # np.save(os.path.join(output_dir, f"dmd_modes_{timestamp}.npy"), modes)
