@@ -153,13 +153,13 @@ def retrieve_svd_results(
         log_and_print(logger, "Attempting to retrieve SVD results from DVC...")
         retrieve_data_from_dvc(parsed_config, data_type="era5_svd")
         log_and_print(
-            logger, f"SVD results retrieved from DVC: {parsed_config['svd_path']}"
+            logger, f"SVD results retrieved from DVC: {parsed_config['save_path']}"
         )
-        return xr.open_dataset(parsed_config["svd_path"])
+        return xr.open_dataset(parsed_config["save_path"])
 
-    if os.path.exists(parsed_config["svd_path"]):
+    if os.path.exists(parsed_config["save_path"]):
         log_and_print(logger, "SVD results found in working directory.")
-        svd_ds = xr.open_dataset(parsed_config["svd_path"])
+        svd_ds = xr.open_dataset(parsed_config["save_path"])
         if check_svd_results(svd_ds):
             log_and_print(logger, "SVD results match configuration.")
             return svd_ds, retrieved_from_dvc
