@@ -15,6 +15,7 @@ from dmd_era5.slice_tools import (
     flatten_era5_variables,
     resample_era5_dataset,
     slice_era5_dataset,
+    space_coord_to_level_lat_lon,
     standardize_data,
 )
 
@@ -33,5 +34,6 @@ __all__ = [
     "retrieve_data_from_dvc",
     "download_era5_data",
     "create_mock_era5_svd",
+    "space_coord_to_level_lat_lon",
 ]
 __version__ = version(__name__)
