@@ -14,6 +14,7 @@ from dmd_era5 import (
     flatten_era5_variables,
     resample_era5_dataset,
     slice_era5_dataset,
+    space_coord_to_level_lat_lon,
     standardize_data,
 )
 from dmd_era5.slice_tools import _apply_delay_embedding_np as apply_delay_embedding_np
@@ -444,3 +445,27 @@ def test_apply_delay_embedding_dataarray_values(mock_era5_temperature_wind, d):
                 Expected delay 2 to be the same as the original data
                 shifted by 3 time steps
                 """
+
+
+def test_space_coord_to_level_lat_lon(mock_era5_temperature):
+    """Test the space_coord_to_level_lat_lon function."""
+    da = flatten_era5_variables(mock_era5_temperature)
+    ds = da.to_dataset(name="temperature")
+    space_data = ds.coords["space"].values
+    ds = space_coord_to_level_lat_lon(ds)
+    level_data = ds.coords["level"].values
+    lat_data = ds.coords["latitude"].values
+    lon_data = ds.coords["longitude"].values
+    assert isinstance(ds, xr.Dataset), "Expected output to be a Dataset"
+    assert "level" in ds.coords, "Expected level coordinate"
+    assert "latitude" in ds.coords, "Expected latitude coordinate"
+    assert "longitude" in ds.coords, "Expected longitude coordinate"
+    assert "space" in ds.dims, "Expected space dimension"
+    assert space_data[0] == (level_data[0], lat_data[0], lon_data[0]), f"""
+    Expected first space coordinate to be {level_data[0], lat_data[0], lon_data[0]},
+    got {space_data[0]}
+    """
+    assert space_data[-1] == (level_data[-1], lat_data[-1], lon_data[-1]), f"""
+    Expected last space coordinate to be {level_data[-1], lat_data[-1], lon_data[-1]},
+    got {space_data[-1]}
+    """
