@@ -1,4 +1,6 @@
+import numpy as np
 import pytest
+import xarray as xr
 import yaml
 from dvc.repo import Repo as DvcRepo
 from git import Repo as GitRepo
@@ -150,4 +152,47 @@ def test_dvc_md5_hashes():
         repo.git.restore(dvc_file_path)
         diff = repo.git.diff("HEAD", dvc_file_path)  # check that the file is restored
 
+    assert diff == "", "The DVC file should have been Git restored"
+
+
+@pytest.mark.dependency(name="test_dvc_data_versions", depends=["test_dvc_md5_hashes"])
+@pytest.mark.docker
+def test_dvc_data_versions():
+    """
+    Test that the data versions are correctly tracked by DVC
+    """
+
+    # test that the current version has temperature and v-wind data
+    data = xr.open_dataset(data_path)
+    data_vars = sorted(np.unique(data.coords["original_variable"].values).tolist())
+    data_vars_attrs = sorted(data.attrs["variables"])
+    assert data_vars == data_vars_attrs, """
+    The variables in the coordinates should match the variables in the attributes
+    """
+    assert data_vars == ["temperature", "v_component_of_wind"], """
+    The data should contain temperature and v-wind data."""
+    data.close()
+
+    # checkout the first commit of the DVC file
+    # to test that the data version has temperature data
+    with GitRepo(here()) as repo:
+        repo.git.checkout("HEAD~2", dvc_file_path)
+    with DvcRepo(here()) as repo:
+        repo.checkout()
+    data = xr.open_dataset(data_path)
+    data_vars = np.unique(data.coords["original_variable"].values).tolist()
+    data_vars_attrs = [data.attrs["variables"]]
+    assert data_vars == data_vars_attrs, """
+    The variables in the coordinates should match the variables in the attributes
+    """
+    assert data_vars == ["temperature"], "The data should contain temperature data"
+    data.close()
+
+    # restore the DVC file
+    with GitRepo(here()) as repo:
+        repo.git.restore("--staged", dvc_file_path)
+        repo.git.restore(dvc_file_path)
+        diff = repo.git.diff("HEAD", dvc_file_path)
+    with DvcRepo(here()) as repo:
+        repo.checkout()
     assert diff == "", "The DVC file should have been Git restored"
