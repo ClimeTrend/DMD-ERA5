@@ -33,15 +33,16 @@ def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
         parsed_config (dict): The parsed configuration dictionary.
 
     Returns:
-        xr.Dataset: The SVD results dataset with the configuration settings as attributes.
+        xr.Dataset: The SVD results dataset with the
+        configuration settings as attributes.
     """
 
     ds.attrs["source_path"] = parsed_config["source_path"]
     ds.attrs["n_components"] = parsed_config["n_components"]
     ds.attrs["variables"] = parsed_config["variables"]
     ds.attrs["levels"] = parsed_config["levels"]
-    ds.attrs["mean_center"] = parsed_config["mean_center"]
-    ds.attrs["scale"] = parsed_config["scale"]
+    ds.attrs["mean_center"] = int(parsed_config["mean_center"])
+    ds.attrs["scale"] = int(parsed_config["scale"])
     ds.attrs["delay_embedding"] = parsed_config["delay_embedding"]
     ds.attrs["svd_type"] = parsed_config["svd_type"]
     ds.attrs["era5_slice_path"] = parsed_config["era5_slice_path"]
