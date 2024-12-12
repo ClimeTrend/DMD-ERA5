@@ -6,7 +6,12 @@ from dvc.repo import Repo as DvcRepo
 from git import Repo as GitRepo
 from pyprojroot import here
 
-from dmd_era5 import add_data_to_dvc, create_mock_era5_svd, space_coord_to_level_lat_lon
+from dmd_era5 import (
+    add_data_to_dvc,
+    create_mock_era5_svd,
+    retrieve_data_from_dvc,
+    space_coord_to_level_lat_lon,
+)
 from dmd_era5.core import config_parser
 from dmd_era5.era5_svd import (
     add_config_attributes,
@@ -196,3 +201,50 @@ def test_dvc_data_versions():
     with DvcRepo(here()) as repo:
         repo.checkout()
     assert diff == "", "The DVC file should have been Git restored"
+
+
+@pytest.mark.dependency(
+    name="test_dvc_retrieve_era5_svd", depends=["test_dvc_data_versions"]
+)
+@pytest.mark.docker
+@pytest.mark.parametrize(
+    "config", ["era5_svd_config_a", "era5_svd_config_b", "era5_svd_config_c"]
+)
+def test_test_retrieve_era5_svd(config, request):
+    """
+    Test that the correct SVD results can be retrieved from DVC
+    using the retrieve_data_from_dvc function and the parsed
+    configuration.
+    """
+    config = request.getfixturevalue(config)
+    parsed_config = config_parser(config, section="era5-svd")
+    retrieve_data_from_dvc(parsed_config, data_type="era5_svd")
+    data = xr.open_dataset(parsed_config["save_path"])
+    data_vars = np.unique(data.coords["original_variable"].values).tolist()
+    levels = np.unique(data.coords["level"].values).tolist()
+    mean_center = bool(data.attrs["mean_center"])
+    scale = bool(data.attrs["scale"])
+    data.close()
+
+    # Git restore the DVC file, which will have been checked out
+    # by retrieve_data_from_dvc
+    with GitRepo(here()) as repo:
+        repo.git.restore("--staged", dvc_file_path)
+        repo.git.restore(dvc_file_path)
+        diff = repo.git.diff("HEAD", dvc_file_path)
+    with DvcRepo(here()) as repo:
+        repo.checkout()
+    assert diff == "", "The DVC file should have been Git restored"
+
+    assert sorted(data_vars) == sorted(parsed_config["variables"]), """
+    The data should contain the expected variables
+    """
+    assert sorted(levels) == sorted(parsed_config["levels"]), """
+    The data should contain the expected pressure levels
+    """
+    assert mean_center == parsed_config["mean_center"], """
+    The data should have the expected mean centering
+    """
+    assert scale == parsed_config["scale"], """
+    The data should have the expected scaling
+    """
