@@ -175,7 +175,7 @@ def retrieve_data_from_dvc(
     # variables, levels, and source path in the configuration, by looping
     # through the log file content.
     md5_hash_keep = None  # The md5 hash of the version to keep
-    date_downloaded_keep = datetime(1970, 1, 1)
+    date_keep = datetime(1970, 1, 1)
 
     if data_type == "era5_slice":
         for md5_hash, metadata in log_file_content.items():
@@ -187,9 +187,9 @@ def retrieve_data_from_dvc(
                 and parsed_config["source_path"] == metadata["source_path"]
             ):
                 date_downloaded = metadata["date_downloaded"]
-                if date_downloaded > date_downloaded_keep:
+                if date_downloaded > date_keep:
                     md5_hash_keep = md5_hash
-                    date_downloaded_keep = date_downloaded
+                    date_keep = date_downloaded
     elif data_type == "era5_svd":
         for md5_hash, metadata in log_file_content.items():
             if (
@@ -202,9 +202,9 @@ def retrieve_data_from_dvc(
                 and parsed_config["n_components"] == metadata["n_components"]
             ):
                 date_downloaded = metadata["date_downloaded"]
-                if date_downloaded > date_downloaded_keep:
+                if date_downloaded > date_keep:
                     md5_hash_keep = md5_hash
-                    date_downloaded_keep = date_downloaded
+                    date_keep = date_downloaded
 
     if md5_hash_keep:
         commit_hash = find_first_commit_with_md5_hash(md5_hash_keep, dvc_file_path)
