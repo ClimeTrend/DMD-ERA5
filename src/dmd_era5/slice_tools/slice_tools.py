@@ -355,6 +355,14 @@ def space_coord_to_level_lat_lon(
         msg = "Input dataset must have a 'space' coordinate."
         raise ValueError(msg)
 
+    if "level" in ds.coords and "latitude" in ds.coords and "longitude" in ds.coords:
+        msg = """
+        Dataset already has separate coordinates for
+        level, latitude, and longitude.
+        """
+        log_and_print(logger, msg)
+        return ds
+
     space_data = ds.coords["space"].values
     level_data = np.array([space[0] for space in space_data])
     lat_data = np.array([space[1] for space in space_data])
