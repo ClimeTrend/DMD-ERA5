@@ -201,10 +201,10 @@ def retrieve_data_from_dvc(
                 and parsed_config["scale"] == bool(metadata["scale"])
                 and parsed_config["n_components"] == metadata["n_components"]
             ):
-                date_downloaded = metadata["date_downloaded"]
-                if date_downloaded > date_keep:
+                date_processed = metadata["date_processed"]
+                if date_processed > date_keep:
                     md5_hash_keep = md5_hash
-                    date_keep = date_downloaded
+                    date_keep = date_processed
 
     if md5_hash_keep:
         commit_hash = find_first_commit_with_md5_hash(md5_hash_keep, dvc_file_path)
