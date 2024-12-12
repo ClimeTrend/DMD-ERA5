@@ -197,8 +197,8 @@ def retrieve_data_from_dvc(
                 and parsed_config["variables"] == metadata["variables"]
                 and parsed_config["levels"] == metadata["levels"]
                 and parsed_config["delay_embedding"] == metadata["delay_embedding"]
-                and parsed_config["mean_center"] == metadata["mean_center"]
-                and parsed_config["scale"] == metadata["scale"]
+                and parsed_config["mean_center"] == bool(metadata["mean_center"])
+                and parsed_config["scale"] == bool(metadata["scale"])
                 and parsed_config["n_components"] == metadata["n_components"]
             ):
                 date_downloaded = metadata["date_downloaded"]
