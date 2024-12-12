@@ -14,7 +14,10 @@ from dmd_era5.era5_svd import (
 
 @pytest.mark.dependency(name="test_retrieve_era5_slice")
 @pytest.mark.docker
-@pytest.mark.parametrize("config", ["era5_svd_config_a", "era5_svd_config_b"])
+@pytest.mark.parametrize(
+    "config",
+    ["era5_svd_config_a", "era5_svd_config_b", "era5_svd_config_c"],
+)
 def test_retrieve_era5_slice(config, request):
     """Test the retrieve_era5_slice function using DVC."""
     config_dict = request.getfixturevalue(config)
