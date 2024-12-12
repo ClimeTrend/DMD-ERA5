@@ -83,4 +83,5 @@ def era5_svd_config_c(era5_svd_base_config):
     config = era5_svd_base_config.copy()
     config["variables"] = "temperature,v_component_of_wind"
     config["levels"] = "1000,925"
+    config["scale"] = True
     return config
