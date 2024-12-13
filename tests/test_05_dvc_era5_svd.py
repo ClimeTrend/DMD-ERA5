@@ -9,7 +9,6 @@ from pyprojroot import here
 from dmd_era5 import (
     add_data_to_dvc,
     create_mock_era5_svd,
-    retrieve_data_from_dvc,
     space_coord_to_level_lat_lon,
 )
 from dmd_era5.core import config_parser
@@ -17,6 +16,7 @@ from dmd_era5.era5_svd import (
     add_config_attributes,
     combine_svd_results,
     retrieve_era5_slice,
+    retrieve_svd_results,
 )
 
 dvc_file_path = "data/era5_svd/2019-01-01T00_2019-01-01T04_1h.nc.dvc"
@@ -208,34 +208,23 @@ def test_dvc_data_versions():
 )
 @pytest.mark.docker
 @pytest.mark.parametrize(
-    "config", ["era5_svd_config_a", "era5_svd_config_b", "era5_svd_config_c"]
+    "config", ["era5_svd_config_c", "era5_svd_config_a", "era5_svd_config_b"]
 )
-def test_test_retrieve_era5_svd(config, request):
-    """
-    Test that the correct SVD results can be retrieved from DVC
-    using the retrieve_data_from_dvc function and the parsed
-    configuration.
-    """
-    config = request.getfixturevalue(config)
-    parsed_config = config_parser(config, section="era5-svd")
-    retrieve_data_from_dvc(parsed_config, data_type="era5_svd")
-    data = xr.open_dataset(parsed_config["save_path"])
-    data_vars = np.unique(data.coords["original_variable"].values).tolist()
-    levels = np.unique(data.coords["level"].values).tolist()
-    mean_center = bool(data.attrs["mean_center"])
-    scale = bool(data.attrs["scale"])
-    data.close()
-
-    # Git restore the DVC file, which will have been checked out
-    # by retrieve_data_from_dvc
-    with GitRepo(here()) as repo:
-        repo.git.restore("--staged", dvc_file_path)
-        repo.git.restore(dvc_file_path)
-        diff = repo.git.diff("HEAD", dvc_file_path)
-    with DvcRepo(here()) as repo:
-        repo.checkout()
-    assert diff == "", "The DVC file should have been Git restored"
-
+def test_retrieve_svd_results(config, request):
+    """Test the retrieve_svd_results function using DVC."""
+    config_dict = request.getfixturevalue(config)
+    parsed_config = config_parser(config_dict, "era5-svd")
+    svd_ds, retrieved_from_dvc = retrieve_svd_results(parsed_config, use_dvc=True)
+    if config == "era5_svd_config_c":
+        # should not be retrieved from DVC because this version should be
+        # in the working directory
+        assert retrieved_from_dvc is False
+    else:
+        assert retrieved_from_dvc is True
+    data_vars = np.unique(svd_ds.coords["original_variable"].values).tolist()
+    levels = np.unique(svd_ds.coords["level"].values).tolist()
+    mean_center = bool(svd_ds.attrs["mean_center"])
+    scale = bool(svd_ds.attrs["scale"])
     assert sorted(data_vars) == sorted(parsed_config["variables"]), """
     The data should contain the expected variables
     """
@@ -248,3 +237,13 @@ def test_test_retrieve_era5_svd(config, request):
     assert scale == parsed_config["scale"], """
     The data should have the expected scaling
     """
+
+    # Git restore the DVC file, which will have been checked out
+    # by retrieve_data_from_dvc
+    with GitRepo(here()) as repo:
+        repo.git.restore("--staged", dvc_file_path)
+        repo.git.restore(dvc_file_path)
+        diff = repo.git.diff("HEAD", dvc_file_path)
+    with DvcRepo(here()) as repo:
+        repo.checkout()
+    assert diff == "", "The DVC file should have been Git restored"
