@@ -206,11 +206,9 @@ def test_combine_svd_results(mock_era5_svd):
 
 def test_retrieve_era5_slice_without_dvc(base_config):
     """
-    Test the retrieve_era5_slice returns an error
-    if the requested data is not found in the working directory.
+    Test retrieve_era5_slice returns None if the
+    requested data is not found in the working directory.
     """
     parsed_config = config_parser(base_config, section="era5-svd")
-    with pytest.raises(
-        FileNotFoundError, match="ERA5 slice not found in working directory"
-    ):
-        retrieve_era5_slice(parsed_config, use_dvc=False)
+    ds, _ = retrieve_era5_slice(parsed_config, use_dvc=False)
+    assert ds is None, "Expected None, got a Dataset"

@@ -52,7 +52,7 @@ def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
 
 def retrieve_era5_slice(
     parsed_config: dict, use_dvc: bool = False
-) -> tuple[xr.Dataset, bool]:
+) -> tuple[xr.Dataset | None, bool]:
     """
     Given the configuration parameters, retrieve a slice of ERA5 data
     from the working directory or DVC.
@@ -62,7 +62,7 @@ def retrieve_era5_slice(
         use_dvc (bool): Whether to use Data Version Control (DVC).
 
     Returns:
-        xr.Dataset: The ERA5 slice.
+        xr.Dataset: The ERA5 slice. If the slice is not retrieved, returns None.
         bool: Whether the ERA5 slice was retrieved from DVC.
     """
 
@@ -106,19 +106,20 @@ def retrieve_era5_slice(
             retrieved_from_dvc = True
             return era5_ds, retrieved_from_dvc
         msg = "ERA5 slice in working directory does not match configuration."
-        raise ValueError(msg)
-    log_and_print(logger, "ERA5 slice not found in working directory.")
+        log_and_print(logger, msg, "warning")
+        return None, retrieved_from_dvc
+    msg = "ERA5 slice not found in working directory."
+    log_and_print(logger, msg, "warning")
     if use_dvc:
         era5_ds = retrieve_from_dvc()
         retrieved_from_dvc = True
         return era5_ds, retrieved_from_dvc
-    msg = "ERA5 slice not found in working directory."
-    raise FileNotFoundError(msg)
+    return None, retrieved_from_dvc
 
 
 def retrieve_svd_results(
     parsed_config: dict, use_dvc: bool = False
-) -> tuple[xr.Dataset, bool]:
+) -> tuple[xr.Dataset | None, bool]:
     """
     Given the configuration parameters, retrieve SVD results from the working directory
     or DVC.
@@ -128,7 +129,7 @@ def retrieve_svd_results(
         use_dvc (bool): Whether to use Data Version Control (DVC).
 
     Returns:
-        xr.Dataset: The SVD results.
+        xr.Dataset: The SVD results. If the results are not retrieved, returns None.
         bool: Whether the SVD results were retrieved from DVC.
     """
 
@@ -169,14 +170,15 @@ def retrieve_svd_results(
             retrieved_from_dvc = True
             return svd_ds, retrieved_from_dvc
         msg = "SVD results in working directory do not match configuration."
-        raise ValueError(msg)
-    log_and_print(logger, "SVD results not found in working directory.")
+        log_and_print(logger, msg, "warning")
+        return None, retrieved_from_dvc
+    msg = "SVD results not found in working directory."
+    log_and_print(logger, msg, "warning")
     if use_dvc:
         svd_ds = retrieve_from_dvc()
         retrieved_from_dvc = True
         return svd_ds, retrieved_from_dvc
-    msg = "SVD results not found in working directory."
-    raise FileNotFoundError(msg)
+    return None, retrieved_from_dvc
 
 
 def svd_on_era5(
