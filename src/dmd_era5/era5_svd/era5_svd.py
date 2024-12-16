@@ -2,16 +2,29 @@ import logging
 import os
 import sys
 from datetime import datetime
+from typing import cast
 
 import numpy as np
 import xarray as xr
 from sklearn.utils.extmath import randomized_svd  # type: ignore[import-untyped]
 
-from dmd_era5 import retrieve_data_from_dvc
+from dmd_era5 import (
+    add_data_to_dvc,
+    retrieve_data_from_dvc,
+)
 from dmd_era5.core import (
+    config_parser,
     config_reader,
     log_and_print,
     setup_logger,
+)
+from dmd_era5.slice_tools import (
+    apply_delay_embedding,
+    flatten_era5_variables,
+    resample_era5_dataset,
+    slice_era5_dataset,
+    space_coord_to_level_lat_lon,
+    standardize_data,
 )
 
 config = config_reader("era5-svd")
@@ -276,30 +289,90 @@ def combine_svd_results(
 
 
 def main(
-    config: dict = config, use_mock_data: bool = False, use_dvc: bool = False
-) -> tuple[bool, bool]:
+    config: dict = config, write_to_netcdf: bool = False, use_dvc: bool = False
+) -> tuple[xr.Dataset, bool, bool]:
     """
     Main function to perform Singular Value Decomposition (SVD) on a slice of ERA5 data.
 
-    If using DVC, the function will attempt to retrieve SVD results from DVC first,
-    before performing a new SVD operation.
-    If appropriate SVD results are not found, the function will attempt to retrieve an
-    appropriate ERA5 slice from DVC on which to perform the SVD operation, if it cannot
-    find one in the working directory.
-    If an appropriate slice is not found in the working directory or DVC, an error
-    will be raised.
-
     Args:
-        config (dict): Configuration dictionary with the configuration parameters,
-        optional and primarily intended for testing.
-        use_mock_data (bool): Use mock data for testing purposes.
+        config (dict): Configuration dictionary with the configuration parameters.
+        write_to_netcdf (bool): Whether to write the SVD results to NetCDF.
         use_dvc (bool): Whether to use Data Version Control (DVC).
 
     Returns:
-        tuple[bool, bool]: A tuple of two booleans indicating whether the SVD results
-        were added to DVC and whether they were retrieved from DVC.
+        xr.Dataset: The SVD results as an xarray Dataset, containing U, s, and V.
+        bool: Whether the computed SVD results were added to DVC.
+        bool: Whether the SVD results were retrieved from DVC.
     """
-    return (False, False)
+    added_to_dvc = False
+    parsed_config = config_parser(config, "era5-svd")
+
+    try:
+        svd_results, retrieved_from_dvc = retrieve_svd_results(parsed_config, use_dvc)
+    except Exception as e:
+        msg = f"Error retrieving SVD results: {e}"
+        log_and_print(logger, msg, "error")
+        raise Exception(msg) from e
+
+    if svd_results is None:
+        try:
+            ds, _ = retrieve_era5_slice(parsed_config, use_dvc)
+            if ds is None:
+                if use_dvc:
+                    msg = "Could not retrieve ERA5 slice from working directory or DVC."
+                else:
+                    msg = """
+                    Could not retrieve ERA5 slice from working directory.
+                    Consider using DVC to retrieve the ERA5 slice, if available.
+                    """
+                log_and_print(logger, msg, "error")
+                raise FileNotFoundError(msg)
+        except Exception as e:
+            msg = f"Error retrieving ERA5 slice: {e}"
+            log_and_print(logger, msg, "error")
+            raise Exception(msg) from e
+        try:
+            ds = ds[parsed_config["variables"]]
+            ds = slice_era5_dataset(cast(xr.Dataset, ds), parsed_config["levels"])
+            ds = resample_era5_dataset(ds, parsed_config["delta_time"])
+            if parsed_config["mean_center"] and parsed_config["scale"]:
+                ds = standardize_data(ds)
+            elif parsed_config["mean_center"]:
+                ds = standardize_data(ds, scale=False)
+            da = flatten_era5_variables(ds)
+            da = apply_delay_embedding(da, parsed_config["delay_embedding"])
+            U, s, V = svd_on_era5(da, parsed_config)
+            svd_results = combine_svd_results(U, s, V, da.coords)
+            svd_results = add_config_attributes(svd_results, parsed_config)
+            svd_results = space_coord_to_level_lat_lon(svd_results)
+        except Exception as e:
+            msg = f"Error in the SVD on ERA5 process: {e}"
+            log_and_print(logger, msg, "error")
+            raise Exception(msg) from e
+
+        if write_to_netcdf:
+            try:
+                log_and_print(logger, "Writing SVD results to NetCDF...")
+                svd_results.to_netcdf(parsed_config["save_path"])
+                log_and_print(
+                    logger, f"SVD results written to {parsed_config['save_path']}"
+                )
+            except Exception as e:
+                msg = f"Error writing SVD results to NetCDF: {e}"
+                log_and_print(logger, msg, "error")
+                raise Exception(msg) from e
+            if use_dvc:
+                try:
+                    log_and_print(logger, "Adding SVD results to DVC...")
+                    add_data_to_dvc(parsed_config["save_path"], svd_results.attrs)
+                    log_and_print(logger, "SVD results added to DVC.")
+                    added_to_dvc = True
+                except Exception as e:
+                    msg = f"Error adding SVD results to DVC: {e}"
+                    log_and_print(logger, msg, "error")
+                    raise Exception(msg) from e
+
+    return svd_results, added_to_dvc, retrieved_from_dvc
 
 
 if __name__ == "__main__":
