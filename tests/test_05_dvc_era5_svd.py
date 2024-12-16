@@ -18,6 +18,9 @@ from dmd_era5.era5_svd import (
     retrieve_era5_slice,
     retrieve_svd_results,
 )
+from dmd_era5.era5_svd import (
+    main as era5_svd_main,
+)
 
 dvc_file_path = "data/era5_svd/2019-01-01T00_2019-01-01T04_1h.nc.dvc"
 dvc_log_path = "data/era5_svd/2019-01-01T00_2019-01-01T04_1h.nc.yaml"
@@ -204,7 +207,7 @@ def test_dvc_data_versions():
 
 
 @pytest.mark.dependency(
-    name="test_dvc_retrieve_era5_svd", depends=["test_dvc_data_versions"]
+    name="test_retrieve_svd_results", depends=["test_dvc_data_versions"]
 )
 @pytest.mark.docker
 @pytest.mark.parametrize(
@@ -237,6 +240,43 @@ def test_retrieve_svd_results(config, request):
     assert scale == parsed_config["scale"], """
     The data should have the expected scaling
     """
+
+    # Git restore the DVC file, which will have been checked out
+    # by retrieve_data_from_dvc
+    with GitRepo(here()) as repo:
+        repo.git.restore("--staged", dvc_file_path)
+        repo.git.restore(dvc_file_path)
+        diff = repo.git.diff("HEAD", dvc_file_path)
+    with DvcRepo(here()) as repo:
+        repo.checkout()
+    assert diff == "", "The DVC file should have been Git restored"
+
+
+@pytest.mark.dependency(
+    name="test_era5_svd_main_retrieved_results", depends=["test_retrieve_svd_results"]
+)
+@pytest.mark.docker
+@pytest.mark.parametrize(
+    "config", ["era5_svd_config_a", "era5_svd_config_b", "era5_svd_config_c"]
+)
+def test_era5_svd_main_retrieved_results(config, request):
+    """
+    Test the main function of era5_svd with results
+    retrieved from DVC or the working directory.
+    """
+    config_dict = request.getfixturevalue(config)
+    _, added_to_dvc, retrieved_from_dvc = era5_svd_main(config_dict, use_dvc=True)
+    assert added_to_dvc is False, "The results should not have been added to DVC"
+    if config == "era5_svd_config_c":
+        # should not be retrieved from DVC because this version should be
+        # in the working directory
+        assert retrieved_from_dvc is False, """
+        The results should not have been retrieved from DVC
+        """
+    else:
+        assert retrieved_from_dvc is True, """
+        The results should have been retrieved from DVC
+        """
 
     # Git restore the DVC file, which will have been checked out
     # by retrieve_data_from_dvc
