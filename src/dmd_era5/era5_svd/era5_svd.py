@@ -6,6 +6,8 @@ from typing import cast
 
 import numpy as np
 import xarray as xr
+from dvc.repo import Repo as DvcRepo
+from pyprojroot import here
 from sklearn.utils.extmath import randomized_svd  # type: ignore[import-untyped]
 
 from dmd_era5 import (
@@ -400,4 +402,25 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+
+    def check_if_dvc_repo():
+        """Check if the current directory is a DVC repository."""
+        try:
+            with DvcRepo(here()) as _:
+                return True
+        except Exception:
+            return False
+
+    is_dvc_repo = check_if_dvc_repo()
+    if not is_dvc_repo:
+        log_and_print(
+            logger,
+            "Not a Data Version Control (DVC) repository. Will not use DVC.",
+            level="warning",
+        )
+        log_and_print(
+            logger, "To initialize a DVC repository, run `dvc init`.", level="warning"
+        )
+        main(write_to_netcdf=True)
+    else:
+        main(write_to_netcdf=True, use_dvc=True)
