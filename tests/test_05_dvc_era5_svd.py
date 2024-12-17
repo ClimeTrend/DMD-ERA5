@@ -8,10 +8,14 @@ from pyprojroot import here
 
 from dmd_era5 import (
     add_data_to_dvc,
+    create_mock_era5,
     create_mock_era5_svd,
     space_coord_to_level_lat_lon,
 )
 from dmd_era5.core import config_parser
+from dmd_era5.era5_download import (
+    add_config_attributes as add_config_attributes_era5_download,
+)
 from dmd_era5.era5_svd import (
     add_config_attributes,
     combine_svd_results,
@@ -287,3 +291,51 @@ def test_era5_svd_main_retrieved_results(config, request):
     with DvcRepo(here()) as repo:
         repo.checkout()
     assert diff == "", "The DVC file should have been Git restored"
+
+
+def add_era5_download_config_d_to_DVC(era5_svd_config_d, era5_download_config_d):
+    """
+    Check that an ERA5 slice meeting the requirements of era5_svd_config_d
+    cannot be retrieved, in which case an ERA5 slice corresponding to
+    era5_download_config_d is created and added to DVC.
+    """
+    parsed_config = config_parser(era5_svd_config_d, "era5-svd")
+    era5_ds, _ = retrieve_era5_slice(parsed_config, use_dvc=True)
+    if era5_ds is None:
+        parsed_config = config_parser(era5_download_config_d, "era5-download")
+        era5_ds = create_mock_era5(
+            start_datetime=parsed_config["start_datetime"],
+            end_datetime=parsed_config["end_datetime"],
+            variables=parsed_config["variables"],
+            levels=parsed_config["levels"],
+        )
+        era5_ds = add_config_attributes_era5_download(era5_ds, parsed_config)
+        era5_ds.to_netcdf(parsed_config["save_path"], format="NETCDF4")
+        add_data_to_dvc(parsed_config["save_path"], era5_ds.attrs)
+        with GitRepo(here()) as repo:
+            repo.index.commit("Add ERA5 data to DVC")
+        with DvcRepo(here()) as repo:
+            repo.push()  # push to the remote DVC repository
+
+
+@pytest.mark.dependency(
+    name="test_era5_svd_main", depends=["test_era5_svd_main_retrieved_results"]
+)
+@pytest.mark.docker
+def test_era5_svd_main(era5_svd_config_d, era5_download_config_d):
+    """
+    Test the main function of era5_svd without retrieval
+    of results from DVC or the working directory.
+    Because SVD results are not available, an ERA5 slice
+    is created and added to DVC, which is then used to
+    calculate the SVD results.
+    """
+    add_era5_download_config_d_to_DVC(era5_svd_config_d, era5_download_config_d)
+    ds, added_to_dvc, retrieved_from_dvc = era5_svd_main(
+        era5_svd_config_d, write_to_netcdf=True, use_dvc=True
+    )
+    assert isinstance(ds, xr.Dataset), "The output should be an xarray Dataset"
+    assert added_to_dvc is True, "The results should have been added to DVC"
+    assert (
+        retrieved_from_dvc is False
+    ), "The results should not have been retrieved from DVC"

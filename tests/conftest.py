@@ -85,3 +85,11 @@ def era5_svd_config_c(era5_svd_base_config):
     config["levels"] = "1000,925"
     config["scale"] = True
     return config
+
+
+@pytest.fixture(scope="module")
+def era5_svd_config_d(era5_svd_base_config):
+    config = era5_svd_base_config.copy()
+    config["variables"] = "temperature"
+    config["levels"] = "500"
+    return config
