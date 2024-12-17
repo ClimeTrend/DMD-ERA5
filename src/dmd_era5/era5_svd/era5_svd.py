@@ -99,25 +99,33 @@ def retrieve_era5_slice(
             and parsed_config["source_path"] == era5_ds_attrs["source_path"]
         )
 
-    def retrieve_from_dvc() -> xr.Dataset:
+    def retrieve_from_dvc() -> xr.Dataset | None:
         log_and_print(logger, "Attempting to retrieve ERA5 slice from DVC...")
-        retrieve_data_from_dvc(parsed_config, data_type="era5_slice")
-        log_and_print(
-            logger, f"ERA5 slice retrieved from DVC: {parsed_config['era5_slice_path']}"
-        )
-        return xr.open_dataset(parsed_config["era5_slice_path"])
+        try:
+            retrieve_data_from_dvc(parsed_config, data_type="era5_slice")
+            log_and_print(
+                logger,
+                f"ERA5 slice retrieved from DVC: {parsed_config['era5_slice_path']}",
+            )
+            return xr.open_dataset(parsed_config["era5_slice_path"])
+        except (FileNotFoundError, ValueError) as e:
+            msg = f"Could not retrieve ERA5 slice from DVC: {e}"
+            log_and_print(logger, msg, "warning")
+            return None
 
     if os.path.exists(parsed_config["era5_slice_path"]):
         log_and_print(logger, "ERA5 slice found in working directory.")
-        era5_ds = xr.open_dataset(parsed_config["era5_slice_path"])
-        if check_era5_slice(era5_ds):
+        era5_ds: xr.Dataset | None = xr.open_dataset(parsed_config["era5_slice_path"])
+        if check_era5_slice(cast(xr.Dataset, era5_ds)):
             log_and_print(logger, "ERA5 slice matches configuration.")
             return era5_ds, retrieved_from_dvc
         log_and_print(logger, "ERA5 slice does not match configuration.")
         if use_dvc:
             era5_ds = retrieve_from_dvc()
-            retrieved_from_dvc = True
-            return era5_ds, retrieved_from_dvc
+            if era5_ds is not None:
+                retrieved_from_dvc = True
+                return era5_ds, retrieved_from_dvc
+            return None, retrieved_from_dvc
         msg = "ERA5 slice in working directory does not match configuration."
         log_and_print(logger, msg, "warning")
         return None, retrieved_from_dvc
@@ -125,8 +133,10 @@ def retrieve_era5_slice(
     log_and_print(logger, msg, "warning")
     if use_dvc:
         era5_ds = retrieve_from_dvc()
-        retrieved_from_dvc = True
-        return era5_ds, retrieved_from_dvc
+        if era5_ds is not None:
+            retrieved_from_dvc = True
+            return era5_ds, retrieved_from_dvc
+        return None, retrieved_from_dvc
     return None, retrieved_from_dvc
 
 
@@ -163,25 +173,32 @@ def retrieve_svd_results(
             and parsed_config["delay_embedding"] == svd_ds_attrs["delay_embedding"]
         )
 
-    def retrieve_from_dvc() -> xr.Dataset:
+    def retrieve_from_dvc() -> xr.Dataset | None:
         log_and_print(logger, "Attempting to retrieve SVD results from DVC...")
-        retrieve_data_from_dvc(parsed_config, data_type="era5_svd")
-        log_and_print(
-            logger, f"SVD results retrieved from DVC: {parsed_config['save_path']}"
-        )
-        return xr.open_dataset(parsed_config["save_path"])
+        try:
+            retrieve_data_from_dvc(parsed_config, data_type="era5_svd")
+            log_and_print(
+                logger, f"SVD results retrieved from DVC: {parsed_config['save_path']}"
+            )
+            return xr.open_dataset(parsed_config["save_path"])
+        except (FileNotFoundError, ValueError) as e:
+            msg = f"Could not retrieve SVD results from DVC: {e}"
+            log_and_print(logger, msg, "warning")
+            return None
 
     if os.path.exists(parsed_config["save_path"]):
         log_and_print(logger, "SVD results found in working directory.")
-        svd_ds = xr.open_dataset(parsed_config["save_path"])
-        if check_svd_results(svd_ds):
+        svd_ds: xr.Dataset | None = xr.open_dataset(parsed_config["save_path"])
+        if check_svd_results(cast(xr.Dataset, svd_ds)):
             log_and_print(logger, "SVD results match configuration.")
             return svd_ds, retrieved_from_dvc
         log_and_print(logger, "SVD results do not match configuration.")
         if use_dvc:
             svd_ds = retrieve_from_dvc()
-            retrieved_from_dvc = True
-            return svd_ds, retrieved_from_dvc
+            if svd_ds is not None:
+                retrieved_from_dvc = True
+                return svd_ds, retrieved_from_dvc
+            return None, retrieved_from_dvc
         msg = "SVD results in working directory do not match configuration."
         log_and_print(logger, msg, "warning")
         return None, retrieved_from_dvc
@@ -189,8 +206,10 @@ def retrieve_svd_results(
     log_and_print(logger, msg, "warning")
     if use_dvc:
         svd_ds = retrieve_from_dvc()
-        retrieved_from_dvc = True
-        return svd_ds, retrieved_from_dvc
+        if svd_ds is not None:
+            retrieved_from_dvc = True
+            return svd_ds, retrieved_from_dvc
+        return None, retrieved_from_dvc
     return None, retrieved_from_dvc
 
 
