@@ -316,6 +316,7 @@ def add_era5_download_config_d_to_DVC(era5_svd_config_d, era5_download_config_d)
             repo.index.commit("Add ERA5 data to DVC")
         with DvcRepo(here()) as repo:
             repo.push()  # push to the remote DVC repository
+    return era5_ds
 
 
 @pytest.mark.dependency(
@@ -330,7 +331,9 @@ def test_era5_svd_main(era5_svd_config_d, era5_download_config_d):
     is created and added to DVC, which is then used to
     calculate the SVD results.
     """
-    add_era5_download_config_d_to_DVC(era5_svd_config_d, era5_download_config_d)
+    era5_ds = add_era5_download_config_d_to_DVC(
+        era5_svd_config_d, era5_download_config_d
+    )
     ds, added_to_dvc, retrieved_from_dvc = era5_svd_main(
         era5_svd_config_d, write_to_netcdf=True, use_dvc=True
     )
@@ -339,3 +342,9 @@ def test_era5_svd_main(era5_svd_config_d, era5_download_config_d):
     assert (
         retrieved_from_dvc is False
     ), "The results should not have been retrieved from DVC"
+    assert era5_ds.attrs["variables"] == ds.attrs["variables"], """
+    The variables of the ERA5 slice and the SVD results should match
+    """
+    assert era5_ds.attrs["levels"] == ds.attrs["levels"], """
+    The levels of the ERA5 slice and the SVD results should match
+    """
