@@ -377,7 +377,7 @@ def main(
         if write_to_netcdf:
             try:
                 log_and_print(logger, "Writing SVD results to NetCDF...")
-                svd_results.to_netcdf(parsed_config["save_path"])
+                svd_results.to_netcdf(parsed_config["save_path"], format="NETCDF4")
                 log_and_print(
                     logger, f"SVD results written to {parsed_config['save_path']}"
                 )
