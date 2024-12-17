@@ -81,20 +81,23 @@ def retrieve_era5_slice(
 
     retrieved_from_dvc = False
 
-    def ensure_list(obj: str | list) -> list[str]:
+    def str_to_list(obj: str | list) -> list[str]:
         return [obj] if isinstance(obj, str) else obj
+
+    def int_to_list(obj: np.integer | np.ndarray) -> list[int]:
+        return [int(obj)] if isinstance(obj, np.integer) else obj.tolist()
 
     def check_era5_slice(era5_ds: xr.Dataset) -> bool:
         era5_ds_attrs = era5_ds.attrs
         return (
             sorted(parsed_config["variables"])
             == sorted(
-                set(ensure_list(era5_ds_attrs["variables"]))
+                set(str_to_list(era5_ds_attrs["variables"]))
                 & set(parsed_config["variables"])
             )
             and sorted(parsed_config["levels"])
             == sorted(
-                set(era5_ds_attrs["levels"].tolist()) & set(parsed_config["levels"])
+                set(int_to_list(era5_ds_attrs["levels"])) & set(parsed_config["levels"])
             )
             and parsed_config["source_path"] == era5_ds_attrs["source_path"]
         )
@@ -352,7 +355,9 @@ def main(
             raise Exception(msg) from e
         try:
             ds = ds[parsed_config["variables"]]
-            ds = slice_era5_dataset(cast(xr.Dataset, ds), parsed_config["levels"])
+            ds = slice_era5_dataset(
+                cast(xr.Dataset, ds), levels=parsed_config["levels"]
+            )
             ds = resample_era5_dataset(ds, parsed_config["delta_time"])
             if parsed_config["mean_center"] and parsed_config["scale"]:
                 ds = standardize_data(ds)
