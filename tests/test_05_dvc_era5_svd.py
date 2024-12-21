@@ -67,7 +67,7 @@ def test_add_era5_svd_to_dvc(config, request):
     config = request.getfixturevalue(config)
     parsed_config = config_parser(config, section="era5-svd")
 
-    U, s, V, coords = create_mock_era5_svd(
+    U, s, V, coords, _ = create_mock_era5_svd(
         start_datetime=parsed_config["start_datetime"],
         end_datetime=parsed_config["end_datetime"],
         variables=parsed_config["variables"],

@@ -35,7 +35,7 @@ def test_create_mock_era5_svd():
     Test that the create_mock_era5_svd function correctly creates
     mock ERA5 SVD results.
     """
-    U, s, V, coords = create_mock_era5_svd(n_components=4)
+    U, s, V, coords, X = create_mock_era5_svd(n_components=4)
 
     assert isinstance(U, np.ndarray), "Expected U to be a numpy array."
     assert isinstance(s, np.ndarray), "Expected s to be a numpy array."
@@ -43,6 +43,7 @@ def test_create_mock_era5_svd():
     assert isinstance(
         coords, xr.Coordinates
     ), "Expected coords to be an xarray Coordinates."
+    assert isinstance(X, xr.DataArray), "Expected X to be an xarray DataArray."
     assert U.shape[1] == 4, "Expected U to have 4 columns."
     assert s.size == 4, "Expected s to have 4 singular values."
     assert V.shape[0] == 4, "Expected V to have 4 rows."

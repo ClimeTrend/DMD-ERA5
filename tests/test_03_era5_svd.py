@@ -176,7 +176,7 @@ def test_svd_on_era5(base_config, mock_era5_small, svd_type):
 
 def test_combine_svd_results(mock_era5_svd):
     """Test the combine_svd_results function."""
-    U, s, V, coords = mock_era5_svd
+    U, s, V, coords, _ = mock_era5_svd
     da = combine_svd_results(U, s, V, coords)
     assert isinstance(da, xr.Dataset), f"Expected xr.Dataset, got {type(da)}"
     assert sorted(da.data_vars.keys()) == sorted(["U", "s", "V"]), f"""
@@ -201,6 +201,25 @@ def test_combine_svd_results(mock_era5_svd):
     """
     assert sorted(da.V.coords.keys()) == sorted(["components", "time"]), """
     Expected V to have coords ['components', 'time']
+    """
+
+
+def test_combine_svd_results_with_origianal_data(mock_era5_svd):
+    """
+    Test the combine_svd_results function, adding the original data array.
+    """
+    U, s, V, coords, X = mock_era5_svd
+    da = combine_svd_results(U, s, V, coords, X)
+    assert sorted(da.data_vars.keys()) == sorted(["U", "s", "V", "X"]), f"""
+    Expected data vars to be ['U', 's', 'V', 'X'], got {list(da.data_vars.keys())}
+    """
+    assert da.U.shape[0] == da.X.shape[0], f"""
+    Expected U and X to have the same number of rows,
+    got {da.U.shape[0]} and {da.X.shape[0]}.
+    """
+    assert da.V.shape[1] == da.X.shape[1], f"""
+    Expected V and X to have the same number of columns,
+    got {da.V.shape[1]} and {da.X.shape[1]}.
     """
 
 

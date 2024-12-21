@@ -164,7 +164,7 @@ def create_mock_era5_svd(
     scale: bool = False,
     delay_embedding: int = 2,
     n_components: int = 6,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, xr.Coordinates]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, xr.Coordinates, xr.DataArray]:
     """
     Create a mock dataset of SVD results on ERA5 for testing purposes.
 
@@ -189,8 +189,9 @@ def create_mock_era5_svd(
 
     Returns
     -------
-    tuple of np.ndarray and xr.Coordinates
-        Tuple of U, s, V, and coordinates of the data on which SVD was performed
+    tuple of np.ndarray, xr.Coordinates and xr.DataArray
+        Tuple of U, s, V, and coordinates of the data on which SVD was performed,
+        and the original data array.
     """
     # Create the mock ERA5 dataset
     if variables is None:
@@ -209,4 +210,4 @@ def create_mock_era5_svd(
     s = s[:n_components]
     V = V[:n_components, :]
 
-    return U, s, V, da.coords
+    return U, s, V, da.coords, da
