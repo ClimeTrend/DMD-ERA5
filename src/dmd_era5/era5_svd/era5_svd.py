@@ -87,7 +87,15 @@ def retrieve_era5_slice(
         return [obj] if isinstance(obj, str) else obj
 
     def int_to_list(obj: np.integer | np.ndarray) -> list[int]:
-        return [int(obj)] if isinstance(obj, np.integer) else obj.tolist()
+        if isinstance(obj, np.integer):
+            return [int(obj)]
+        if isinstance(obj, np.ndarray):
+            if not np.issubdtype(obj.dtype, np.integer):
+                msg = "Levels must be integers."
+                raise ValueError(msg)
+            return list(map(int, obj.tolist()))
+        msg = "Levels must be integers."
+        raise TypeError(msg)
 
     def check_era5_slice(era5_ds: xr.Dataset) -> bool:
         era5_ds_attrs = era5_ds.attrs
