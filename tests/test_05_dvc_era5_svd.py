@@ -293,16 +293,16 @@ def test_era5_svd_main_retrieved_results(config, request):
     assert diff == "", "The DVC file should have been Git restored"
 
 
-def add_era5_download_config_d_to_DVC(era5_svd_config_d, era5_download_config_d):
+def add_era5_download_config_to_DVC(era5_svd_config, era5_download_config):
     """
-    Check that an ERA5 slice meeting the requirements of era5_svd_config_d
+    Check that an ERA5 slice meeting the requirements of era5_svd_config
     cannot be retrieved, in which case an ERA5 slice corresponding to
-    era5_download_config_d is created and added to DVC.
+    era5_download_config is created and added to DVC.
     """
-    parsed_config = config_parser(era5_svd_config_d, "era5-svd")
+    parsed_config = config_parser(era5_svd_config, "era5-svd")
     era5_ds, _ = retrieve_era5_slice(parsed_config, use_dvc=True)
     if era5_ds is None:
-        parsed_config = config_parser(era5_download_config_d, "era5-download")
+        parsed_config = config_parser(era5_download_config, "era5-download")
         era5_ds = create_mock_era5(
             start_datetime=parsed_config["start_datetime"],
             end_datetime=parsed_config["end_datetime"],
@@ -331,9 +331,7 @@ def test_era5_svd_main(era5_svd_config_d, era5_download_config_d):
     is created and added to DVC, which is then used to
     calculate the SVD results.
     """
-    era5_ds = add_era5_download_config_d_to_DVC(
-        era5_svd_config_d, era5_download_config_d
-    )
+    era5_ds = add_era5_download_config_to_DVC(era5_svd_config_d, era5_download_config_d)
     ds, added_to_dvc, retrieved_from_dvc = era5_svd_main(
         era5_svd_config_d, write_to_netcdf=True, use_dvc=True
     )
