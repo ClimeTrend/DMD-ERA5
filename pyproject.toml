@@ -35,6 +35,7 @@ dependencies = ["xarray",
     "dvc",
     "GitPython",
     "scikit-learn",
+    "dask",
     ]
 
 [project.optional-dependencies]
