@@ -346,3 +346,7 @@ def test_era5_svd_main(era5_svd_config_d, era5_download_config_d):
     assert era5_ds.attrs["levels"] == ds.attrs["levels"], """
     The levels of the ERA5 slice and the SVD results should match
     """
+    with GitRepo(here()) as repo:
+        repo.index.commit("Add SVD results to DVC")
+    with DvcRepo(here()) as repo:
+        repo.push()
