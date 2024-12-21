@@ -135,6 +135,7 @@ def test_actual_config_era5_svd_section(actual_config_reader):
     assert "svd_type" in config, "era5-svd section should have svd_type"
     assert "delay_embedding" in config, "era5-svd section should have delay_embedding"
     assert "n_components" in config, "era5-svd section should have n_components"
+    assert "save_data_matrix" in config, "era5-svd section should have save_data_matrix"
 
 
 def test_actual_config_era5_download_type(actual_config_reader):
@@ -154,7 +155,7 @@ def test_actual_config_era5_svd_type(actual_config_reader):
     config = actual_config_reader("era5-svd")
 
     for key, value in config.items():
-        if key == "mean_center" or key == "scale":
+        if key == "mean_center" or key == "scale" or key == "save_data_matrix":
             assert isinstance(value, bool), f"Expected {key} to be a bool."
         elif key == "svd_type":
             assert isinstance(value, str), f"Expected {key} to be a string."

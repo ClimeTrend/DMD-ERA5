@@ -381,7 +381,10 @@ def main(
             da = flatten_era5_variables(ds)
             da = apply_delay_embedding(da, parsed_config["delay_embedding"])
             U, s, V = svd_on_era5(da, parsed_config)
-            svd_results = combine_svd_results(U, s, V, da.coords)
+            if parsed_config["save_data_matrix"]:
+                svd_results = combine_svd_results(U, s, V, da.coords, da)
+            else:
+                svd_results = combine_svd_results(U, s, V, da.coords)
             svd_results = add_config_attributes(svd_results, parsed_config)
             svd_results = space_coord_to_level_lat_lon(svd_results)
         except Exception as e:

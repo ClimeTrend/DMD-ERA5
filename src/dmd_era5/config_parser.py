@@ -91,6 +91,7 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
             "end_datetime",
             "delta_time",
             "n_components",
+            "save_data_matrix",
         ]
 
     # Check for required fields

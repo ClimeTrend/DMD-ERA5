@@ -27,6 +27,7 @@ def era5_svd_base_config():
         "mean_center": True,
         "scale": False,
         "n_components": 10,
+        "save_data_matrix": False,
     }
 
 

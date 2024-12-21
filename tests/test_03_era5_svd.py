@@ -33,6 +33,7 @@ def base_config():
         "end_datetime": "2020-01-01T12",
         "delta_time": "1h",
         "n_components": 10,
+        "save_data_matrix": True,
     }
 
 
@@ -116,6 +117,7 @@ def test_config_parser_basic(base_config):
         "end_datetime",
         "delta_time",
         "n_components",
+        "save_data_matrix",
     ],
 )
 def test_config_parser_missing_field(base_config, field):
