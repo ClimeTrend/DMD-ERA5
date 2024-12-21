@@ -276,4 +276,15 @@ def config_parser(config: dict, section: str, logger: Logger | None = None) -> d
                 logger.error(msg)
             raise ValueError(msg)
 
+        # Parse the save_data_matrix flag
+        parsed_config["save_data_matrix"] = config["save_data_matrix"]
+        if not isinstance(parsed_config["save_data_matrix"], bool):
+            msg = f"""
+            Invalid save_data_matrix in config: {parsed_config['save_data_matrix']}.
+            save_data_matrix must be a boolean value.
+            """
+            if logger is not None:
+                logger.error(msg)
+            raise ValueError(msg)
+
     return parsed_config
