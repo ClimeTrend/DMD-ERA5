@@ -260,7 +260,6 @@ def combine_svd_results(
     V: np.ndarray,
     coords: xr.Coordinates,
     X: xr.DataArray | None = None,
-    attrs: dict | None = None,
 ) -> xr.Dataset:
     """
     Given the SVD results U, s, and V, combine them into an xarray Dataset.
@@ -275,7 +274,6 @@ def combine_svd_results(
             which the SVD was performed.
         X (xr.DataArray): The pre-processed ERA5 slice on which the SVD was performed.
             The default is None.
-        attrs (dict): The attributes to be added to the xarray Dataset.
 
     Returns:
         xr.Dataset: The xarray Dataset containing the SVD results.
@@ -315,7 +313,6 @@ def combine_svd_results(
                 "V": V_da,
             },
             coords=coords,
-            attrs=attrs,
         )
     return xr.Dataset(
         {
@@ -325,7 +322,6 @@ def combine_svd_results(
             "X": X,
         },
         coords=coords,
-        attrs=attrs,
     )
 
 
