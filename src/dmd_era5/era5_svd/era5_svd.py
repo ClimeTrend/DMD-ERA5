@@ -62,6 +62,7 @@ def add_config_attributes(ds: xr.Dataset, parsed_config: dict) -> xr.Dataset:
     ds.attrs["svd_type"] = parsed_config["svd_type"]
     ds.attrs["era5_slice_path"] = parsed_config["era5_slice_path"]
     ds.attrs["date_processed"] = datetime.now().isoformat()
+    ds.attrs["save_data_matrix"] = int(parsed_config["save_data_matrix"])
     return ds
 
 
