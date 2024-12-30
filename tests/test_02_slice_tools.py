@@ -113,13 +113,19 @@ def test_standardize_data(data, request):
     assert not np.allclose(
         mock_era5["temperature"].std(dim="time"), 1, atol=1e-6
     ), "Expected non-unity std"
-    data_standardized = standardize_data(mock_era5)
+    data_standardized, data_mean, data_std = standardize_data(mock_era5)
     assert np.allclose(
         data_standardized["temperature"].mean(dim="time"), 0, atol=1e-6
     ), "Expected mean 0"
     assert np.allclose(
         data_standardized["temperature"].std(dim="time"), 1, atol=1e-6
     ), "Expected std 1"
+    assert np.allclose(
+        data_mean["temperature"], mock_era5.mean(dim="time")["temperature"], atol=1e-6
+    )
+    assert np.allclose(
+        data_std["temperature"], mock_era5.std(dim="time")["temperature"], atol=1e-6
+    )
     if data == "mock_era5_temperature_wind":
         assert not np.allclose(
             mock_era5["u_component_of_wind"].mean(dim="time"), 0, atol=1e-6
@@ -133,6 +139,16 @@ def test_standardize_data(data, request):
         assert np.allclose(
             data_standardized["u_component_of_wind"].std(dim="time"), 1, atol=1e-6
         ), "Expected std 1"
+        assert np.allclose(
+            data_mean["u_component_of_wind"],
+            mock_era5.mean(dim="time")["u_component_of_wind"],
+            atol=1e-6,
+        )
+        assert np.allclose(
+            data_std["u_component_of_wind"],
+            mock_era5.std(dim="time")["u_component_of_wind"],
+            atol=1e-6,
+        )
 
 
 @pytest.mark.parametrize(
@@ -141,7 +157,7 @@ def test_standardize_data(data, request):
 def test_standardize_data_no_scale(data, request):
     """Test standardize_data with scale=False."""
     mock_era5 = request.getfixturevalue(data)
-    data_standardized = standardize_data(mock_era5, scale=False)
+    data_standardized, _, _ = standardize_data(mock_era5, scale=False)
     assert np.allclose(
         data_standardized["temperature"].mean(dim="time"), 0, atol=1e-6
     ), "Expected mean 0"
@@ -169,7 +185,7 @@ def test_standardize_data_different_dimension(data, request):
     assert not np.allclose(
         mock_era5["temperature"].std(dim="level").values, 1, atol=1e-6
     ), "Expected non-unity std"
-    data_standardized = standardize_data(mock_era5, dim="level")
+    data_standardized, _, _ = standardize_data(mock_era5, dim="level")
     assert np.allclose(
         data_standardized["temperature"].mean(dim="level").values, 0, atol=1e-6
     ), "Expected mean 0"
