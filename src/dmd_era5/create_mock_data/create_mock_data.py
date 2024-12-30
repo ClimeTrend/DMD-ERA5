@@ -200,7 +200,7 @@ def create_mock_era5_svd(
         levels = [1000]
     ds = create_mock_era5(start_datetime, end_datetime, variables, levels)
     if mean_center:
-        ds = standardize_data(ds, scale=scale)
+        ds, _, _ = standardize_data(ds, scale=scale)
     da = flatten_era5_variables(ds)
     da = apply_delay_embedding(da, delay_embedding)
 

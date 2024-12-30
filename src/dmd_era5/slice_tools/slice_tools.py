@@ -145,7 +145,7 @@ def standardize_data(
     data: xr.Dataset,
     dim: str = "time",
     scale: bool = True,
-) -> xr.Dataset:
+) -> tuple[xr.Dataset, xr.Dataset, xr.Dataset | None]:
     """
     Standardize the input Dataset by applying mean centering and (optionally)
     scaling to unit variance along the specified dimension.
@@ -157,6 +157,9 @@ def standardize_data(
 
     Returns:
         xr.Dataset: The standardized data.
+        xr.Dataset: The mean along the specified dimension
+        xr.Dataset: The standard deviation along the specified dimension,
+            if scale is True. Otherwise returns None.
     """
     log_and_print(logger, f"Standardizing data along {dim} dimension...")
 
@@ -165,12 +168,15 @@ def standardize_data(
         logger,
         f"Removing mean along {dim} dimension...",
     )
-    data = data - data.mean(dim=dim)
+    mean = data.mean(dim=dim)
+    data = data - mean
     if scale:
         # Scale the data by the standard deviation
         log_and_print(logger, f"Scaling to unit variance along {dim} dimension...")
-        data = data / data.std(dim=dim)
-    return data
+        std = data.std(dim=dim)
+        data = data / std
+        return data, mean, std
+    return data, mean, None
 
 
 def _apply_delay_embedding_np(X: np.ndarray, d: int) -> np.ndarray:
