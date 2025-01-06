@@ -276,59 +276,89 @@ def apply_delay_embedding(X: xr.DataArray, d: int) -> xr.DataArray:
 
 def flatten_era5_variables(era5_ds: xr.Dataset) -> xr.DataArray:
     """
-    Flatten the variables in an ERA5 dataset to a single 2D array,
-    returned as a DataArray with dimensions (space, time). If there is more
-    than one variable in the dataset, they are stacked along the space dimension.
-    In other words, the output array has shape (n_space * n_variables, n_time),
-    where the first n_space elements correspond to the first variable, the next
-    n_space elements correspond to the second variable, and so on.
+    Flatten the variables in an ERA5 dataset to a single 2D array
+    (if time coordinate is present) or a 1D array (if time coordinate is absent),
+    returned as a DataArray with dimensions (space, time) or (space).
+    If there is more than one variable in the dataset, they are stacked
+    along the space dimension. In other words, the output array has shape
+    (n_space * n_variables, n_time) or (n_space * n_variables), where the
+    first n_space elements correspond to the first variable, the next n_space elements
+    correspond to the second variable, and so on.
 
     Parameters
     ----------
     era5_ds : xr.Dataset
-        The input ERA5 dataset.
+        The input ERA5 dataset. It must have coordinates
+        ('latitude', 'longitude', 'level', 'time'), if it is a time series,
+        or ('latitude', 'longitude', 'level'), if it is a mean or standard
+        deviation field. It must have at least one variable.
 
     Returns
     -------
     xr.DataArray
-        The flattened array of variables, with shape (n_space * n_variables, n_time),
-        where n_space = n_level * n_lat * n_lon. The DataArray has dimensions
-        (space, time), and coordinates "space", "time", and "original_variable".
-        "space" is a tuple of (level, latitude, longitude), and "original_variable"
-        is the original variable name.
+        The flattened array of variables, with shape (n_space * n_variables, n_time) or
+        (n_space * n_variables), where n_space = n_level * n_lat * n_lon.
+        The DataArray has dimensions (space, time) or (space), and coordinates "space",
+        "time" (if present), and "original_variable". "space" is a tuple of
+        (level, latitude, longitude), and "original_variable" is the original
+        variable name.
     """
 
     variables: list[str] = list(map(str, era5_ds.data_vars.keys()))
     coords: list[str] = list(map(str, era5_ds.coords.keys()))
-    must_have_coords = ["latitude", "longitude", "time", "level"]
+    must_have_space_coords = ["latitude", "longitude", "level"]
+    must_have_space_time_coords = [*must_have_space_coords, "time"]
     spatial_stack_order = ["level", "latitude", "longitude"]
 
-    if sorted(coords) != sorted(must_have_coords):
-        msg = f"Missing required coordinates: {must_have_coords}."
+    if sorted(coords) != sorted(must_have_space_time_coords) and sorted(
+        coords
+    ) != sorted(must_have_space_coords):
+        msg = """
+        Input dataset must have coordinates ('latitude', 'longitude', 'level')
+        or ('latitude', 'longitude', 'level', 'time').
+        """
         raise ValueError(msg)
 
     # stack the spatial dimensions
     stacked = era5_ds.stack(space=spatial_stack_order)
 
-    # create a list of variable arrays with shape (n_space, n_time)
-    data_list = [stacked[var].transpose("space", "time").values for var in variables]
+    if "time" in coords:
+        # create a list of variable arrays with shape (n_space, n_time)
+        data_list = [
+            stacked[var].transpose("space", "time").values for var in variables
+        ]
+    else:
+        # create a list of variable arrays with shape (n_space,)
+        data_list = [stacked[var].values for var in variables]
     # concatenate the variable arrays along the space dimension,
     # resulting in an array of shape (n_space * n_variables, n_time)
+    # or (n_space * n_variables,)
     data_combined = np.concatenate(data_list, axis=0)
 
     variable_labels = np.repeat(variables, stacked.coords["space"].shape[0])
 
     # create a DataArray for the combined data
-    dataarray = xr.DataArray(
-        data_combined,
-        dims=("space", "time"),
-        coords={
-            "space": np.tile(stacked.coords["space"], len(variables)),
-            "time": stacked.coords["time"],
-            "original_variable": ("space", variable_labels),
-        },
-        attrs=era5_ds.attrs,
-    )
+    if "time" in coords:
+        dataarray = xr.DataArray(
+            data_combined,
+            dims=("space", "time"),
+            coords={
+                "space": np.tile(stacked.coords["space"], len(variables)),
+                "time": stacked.coords["time"],
+                "original_variable": ("space", variable_labels),
+            },
+            attrs=era5_ds.attrs,
+        )
+    else:
+        dataarray = xr.DataArray(
+            data_combined,
+            dims=("space",),
+            coords={
+                "space": np.tile(stacked.coords["space"], len(variables)),
+                "original_variable": ("space", variable_labels),
+            },
+            attrs=era5_ds.attrs,
+        )
     dataarray.attrs["original_variables"] = variables
     dataarray.attrs["space_coords"] = spatial_stack_order
 

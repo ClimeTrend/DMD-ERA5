@@ -104,6 +104,7 @@ def test_resample_era5_dataset():
 @pytest.mark.parametrize(
     "data", ["mock_era5_temperature", "mock_era5_temperature_wind"]
 )
+@pytest.mark.dependency(name="test_standardize_data")
 def test_standardize_data(data, request):
     """Test the standardize_data function."""
     mock_era5 = request.getfixturevalue(data)
@@ -330,6 +331,32 @@ def test_flatten_era5_variables_array_dims(mock_era5_temperature_wind):
                 level=level, latitude=lat, longitude=lon
             ).values,
         )
+
+
+@pytest.mark.dependency(
+    name="test_flatten_era5_variables_no_time_coord",
+    depends=["test_standardize_data"],
+)
+def test_flatten_era5_variables_no_time_coord(mock_era5_temperature):
+    """
+    Test the flatten_era5_variables function when the dataset has no time coordinate
+    (e.g. when the mean or std of the dataset is passed).
+    """
+    _, ds_mean, ds_std = standardize_data(mock_era5_temperature)
+    da_mean = flatten_era5_variables(ds_mean)
+    da_std = flatten_era5_variables(ds_std)
+    assert list(da_mean.dims) == ["space"], "Expected space dimension"
+    assert list(da_std.dims) == ["space"], "Expected space dimension"
+    n_level = ds_mean.sizes["level"]
+    n_lat = ds_mean.sizes["latitude"]
+    n_lon = ds_mean.sizes["longitude"]
+    n_space = n_level * n_lat * n_lon
+    assert da_mean.values.shape == (n_space,), f"""
+    Expected shape to be ({n_space},), got {da_mean.values.shape}.
+    """
+    assert da_std.values.shape == (n_space,), f"""
+    Expected shape to be ({n_space},), got {da_std.values.shape}.
+    """
 
 
 @pytest.mark.dependency(
