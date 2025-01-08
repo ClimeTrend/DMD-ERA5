@@ -346,6 +346,10 @@ def main(
 
     Returns:
         xr.Dataset: The SVD results as an xarray Dataset, containing U, s, and V.
+            Depending on the configuration settings, the Dataset may also contain
+            the pre-processed ERA5 slice on which the SVD was performed (X),
+            the mean (X_mean), and the standard deviation (X_std) along
+            the time dimension.
         bool: Whether the computed SVD results were added to DVC.
         bool: Whether the SVD results were retrieved from DVC.
     """
@@ -391,6 +395,8 @@ def main(
                 ds_std = None
             da = flatten_era5_variables(ds)
             da = apply_delay_embedding(da, parsed_config["delay_embedding"])
+            # Repeat the mean and standard deviation along the space dimension
+            # to match the shape of the data array after delay embedding
             if ds_mean and parsed_config["delay_embedding"] > 1:
                 da_mean = flatten_era5_variables(ds_mean)
                 da_mean = xr.concat(
