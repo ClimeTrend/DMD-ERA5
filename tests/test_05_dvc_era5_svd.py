@@ -331,9 +331,11 @@ def test_era5_svd_main(era5_svd_config_d, era5_download_config_d):
     is created and added to DVC, which is then used to
     calculate the SVD results.
     """
-    era5_ds = add_era5_download_config_to_DVC(era5_svd_config_d, era5_download_config_d)
+    svd_config = era5_svd_config_d.copy()
+    download_config = era5_download_config_d.copy()
+    era5_ds = add_era5_download_config_to_DVC(svd_config, download_config)
     ds, added_to_dvc, retrieved_from_dvc = era5_svd_main(
-        era5_svd_config_d, write_to_netcdf=True, use_dvc=True
+        svd_config, write_to_netcdf=True, use_dvc=True
     )
     assert isinstance(ds, xr.Dataset), "The output should be an xarray Dataset"
     assert added_to_dvc is True, "The results should have been added to DVC"
@@ -346,6 +348,29 @@ def test_era5_svd_main(era5_svd_config_d, era5_download_config_d):
     assert era5_ds.attrs["levels"] == ds.attrs["levels"], """
     The levels of the ERA5 slice and the SVD results should match
     """
+    assert "U" in ds.data_vars, "The Dataset should contain the U matrix"
+    assert "s" in ds.data_vars, "The Dataset should contain the s vector"
+    assert "V" in ds.data_vars, "The Dataset should contain the V matrix"
+    if svd_config["save_data_matrix"]:
+        assert (
+            "X" in ds.data_vars
+        ), "The Dataset should contain the original data matrix"
+    else:
+        assert (
+            "X" not in ds.data_vars
+        ), "The Dataset should not contain the original data matrix"
+    if svd_config["mean_center"]:
+        assert "X_mean" in ds.data_vars, "The Dataset should contain the mean"
+    else:
+        assert "X_mean" not in ds.data_vars, "The Dataset should not contain the mean"
+    if svd_config["scale"]:
+        assert (
+            "X_std" in ds.data_vars
+        ), "The Dataset should contain the standard deviation"
+    else:
+        assert (
+            "X_std" not in ds.data_vars
+        ), "The Dataset should not contain the standard deviation"
     with GitRepo(here()) as repo:
         repo.index.commit("Add SVD results to DVC")
     with DvcRepo(here()) as repo:
