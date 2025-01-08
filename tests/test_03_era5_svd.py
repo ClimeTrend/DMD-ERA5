@@ -158,7 +158,7 @@ def test_svd_on_era5(base_config, mock_era5_small, svd_type):
     config["svd_type"] = svd_type
     parsed_config = config_parser(base_config, section="era5-svd")
     if parsed_config["mean_center"]:
-        data = standardize_data(data, scale=parsed_config["scale"])
+        data, _, _ = standardize_data(data, scale=parsed_config["scale"])
     data = flatten_era5_variables(data)
     data = apply_delay_embedding(data, parsed_config["delay_embedding"])
     U, s, V = svd_on_era5(data, parsed_config)
