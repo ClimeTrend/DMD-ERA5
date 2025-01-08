@@ -78,6 +78,20 @@ Once you have pushed to the remote, it is safe to delete the downloaded NetCDF f
 
 Next time you want to download the same data or a subset of it (i.e. a subset of variables or pressure levels) over the same time range and time delta and from the same source, you can simply run `python -m dmd_era5.era5_download.era5_download` again. DVC will automatically detect that you have already downloaded the data and will not download it again; it will simply retrieve the right version of the data from the DVC repository.
 
+### Perform SVD on ERA5
+
+This package makes use of the optimized DMD algorithm proposed by Askham and Kutz (2018). An optional step of the algorithm that is suitable for large datasets is to perform Singular Value Decomposition (SVD) on the data prior to running DMD. `dmd-era5` allows you to perform SVD on ERA5 data by running:
+
+```bash
+python -m dmd_era5.era5_svd.era5_svd
+```
+
+Modify the `era5-svd` section of the `config.ini` file to specify the desired SVD parameters. The SVD will be performed on the downloaded ERA5 data, which is assumed to be stored in the `data/era5_download` directory. The SVD results will be saved in the `data/era5_svd` directory as a NetCDF file, using the time range and time delta specified in `config.ini` as the file name (e.g. `2019-01-01T00_2019-01-02T00_1h.nc` for a time range from 2019-01-01 00:00 to 2019-01-02 00:00 with a time delta of 1 hour).
+
+If you followed the DVC setup instructions above, the SVD results will be automatically tracked by DVC, and you will see three new files appearing in your Git staging area, in a similar way to the downloaded data. You should commit these files to Git with a message like "First SVD of 2019-01-01T00_2019-01-02T00_1h.nc", and optionally push them to the remote storage location.
+
+`era5_svd` allows you to perform standard SVD from NumPy or randomized SVD from scikit-learn. The randomized SVD is faster and more memory-efficient than the standard SVD, and it's recommended for large datasets.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to contribute.
@@ -93,3 +107,7 @@ Distributed under the terms of the [MIT license](LICENSE).
 [pypi-platforms]:           https://img.shields.io/pypi/pyversions/dmd-era5
 [pypi-version]:             https://img.shields.io/pypi/v/dmd-era5
 <!-- prettier-ignore-end -->
+
+## References
+
+1. T. Askham and J. N. Kutz, "Variable Projection Methods for an Optimized Dynamic Mode Decomposition", 2018.
