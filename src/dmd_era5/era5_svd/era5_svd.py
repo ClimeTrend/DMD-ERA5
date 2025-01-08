@@ -268,12 +268,13 @@ def combine_svd_results(
     s: np.ndarray,
     V: np.ndarray,
     coords: xr.Coordinates,
-    X: xr.DataArray | None = None,
+    **kwargs: xr.DataArray | None,
 ) -> xr.Dataset:
     """
     Given the SVD results U, s, and V, combine them into an xarray Dataset.
-    If the pre-processed ERA5 slice on which the SVD was performed is provided,
-    add it to the xarray Dataset.
+    If the pre-processed ERA5 slice on which the SVD was performed (X), the
+    mean (X_mean), and the standard deviation (X_std) are provided, they are
+    also included in the Dataset.
 
     Args:
         U (np.ndarray): The left singular vectors.
@@ -281,8 +282,11 @@ def combine_svd_results(
         V (np.ndarray): The right singular vectors.
         coords (xr.Coordinates): The coordinates of the pre-processed ERA5 slice on
             which the SVD was performed.
-        X (xr.DataArray): The pre-processed ERA5 slice on which the SVD was performed.
-            The default is None.
+        **kwargs (xr.DataArray):
+            X: The pre-processed ERA5 slice on which the SVD was performed.
+            X_mean: The mean along the time dimension of the pre-processed ERA5 slice.
+            X_std: The standard deviation along the time dimension of the pre-processed
+                ERA5 slice.
 
     Returns:
         xr.Dataset: The xarray Dataset containing the SVD results.
@@ -314,24 +318,19 @@ def combine_svd_results(
         },
     )
 
-    if X is None:
-        return xr.Dataset(
-            {
-                "U": U_da,
-                "s": s_da,
-                "V": V_da,
-            },
-            coords=coords,
-        )
-    return xr.Dataset(
-        {
-            "U": U_da,
-            "s": s_da,
-            "V": V_da,
-            "X": X,
-        },
-        coords=coords,
-    )
+    data_vars = {
+        "U": U_da,
+        "s": s_da,
+        "V": V_da,
+    }
+    if "X" in kwargs and kwargs["X"] is not None:
+        data_vars["X"] = kwargs["X"]
+    if "X_mean" in kwargs and kwargs["X_mean"] is not None:
+        data_vars["X_mean"] = kwargs["X_mean"]
+    if "X_std" in kwargs and kwargs["X_std"] is not None:
+        data_vars["X_std"] = kwargs["X_std"]
+
+    return xr.Dataset(data_vars, coords=coords)
 
 
 def main(
@@ -384,16 +383,38 @@ def main(
             )
             ds = resample_era5_dataset(ds, parsed_config["delta_time"])
             if parsed_config["mean_center"] and parsed_config["scale"]:
-                ds = standardize_data(ds)
+                ds, ds_mean, ds_std = standardize_data(ds)
             elif parsed_config["mean_center"]:
-                ds = standardize_data(ds, scale=False)
+                ds, ds_mean, ds_std = standardize_data(ds, scale=False)
+            else:
+                ds_mean = None
+                ds_std = None
             da = flatten_era5_variables(ds)
             da = apply_delay_embedding(da, parsed_config["delay_embedding"])
+            if ds_mean and parsed_config["delay_embedding"] > 1:
+                da_mean = flatten_era5_variables(ds_mean)
+                da_mean = xr.concat(
+                    [da_mean] * parsed_config["delay_embedding"], dim="space"
+                )
+                if ds_std:
+                    da_std = flatten_era5_variables(ds_std)
+                    da_std = xr.concat(
+                        [da_std] * parsed_config["delay_embedding"], dim="space"
+                    )
+                else:
+                    da_std = None
+            else:
+                da_mean = None
+                da_std = None
             U, s, V = svd_on_era5(da, parsed_config)
             if parsed_config["save_data_matrix"]:
-                svd_results = combine_svd_results(U, s, V, da.coords, da)
+                svd_results = combine_svd_results(
+                    U, s, V, da.coords, X=da, X_mean=da_mean, X_std=da_std
+                )
             else:
-                svd_results = combine_svd_results(U, s, V, da.coords)
+                svd_results = combine_svd_results(
+                    U, s, V, da.coords, X_mean=da_mean, X_std=da_std
+                )
             svd_results = add_config_attributes(svd_results, parsed_config)
             svd_results = space_coord_to_level_lat_lon(svd_results)
         except Exception as e:

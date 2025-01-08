@@ -206,12 +206,12 @@ def test_combine_svd_results(mock_era5_svd):
     """
 
 
-def test_combine_svd_results_with_origianal_data(mock_era5_svd):
+def test_combine_svd_results_with_original_data(mock_era5_svd):
     """
     Test the combine_svd_results function, adding the original data array.
     """
     U, s, V, coords, X = mock_era5_svd
-    da = combine_svd_results(U, s, V, coords, X)
+    da = combine_svd_results(U, s, V, coords, X=X)
     assert sorted(da.data_vars.keys()) == sorted(["U", "s", "V", "X"]), f"""
     Expected data vars to be ['U', 's', 'V', 'X'], got {list(da.data_vars.keys())}
     """
