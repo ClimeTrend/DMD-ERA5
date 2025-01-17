@@ -88,6 +88,8 @@ python -m dmd_era5.era5_svd.era5_svd
 
 Modify the `era5-svd` section of the `config.ini` file to specify the desired SVD parameters. The SVD will be performed on the downloaded ERA5 data, which is assumed to be stored in the `data/era5_download` directory. The SVD results will be saved in the `data/era5_svd` directory as a NetCDF file, using the time range and time delta specified in `config.ini` as the file name (e.g. `2019-01-01T00_2019-01-02T00_1h.nc` for a time range from 2019-01-01 00:00 to 2019-01-02 00:00 with a time delta of 1 hour).
 
+PLACEHOLDER: describe contents of NetCDF file.
+
 If you followed the DVC setup instructions above, the SVD results will be automatically tracked by DVC, and you will see three new files appearing in your Git staging area, in a similar way to the downloaded data. You should commit these files to Git with a message like "First SVD of 2019-01-01T00_2019-01-02T00_1h.nc", and optionally push them to the remote storage location.
 
 `era5_svd` allows you to perform standard SVD from NumPy or randomized SVD from scikit-learn. The randomized SVD is faster and more memory-efficient than the standard SVD, and it's recommended for large datasets.
