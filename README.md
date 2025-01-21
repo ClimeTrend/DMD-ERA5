@@ -20,7 +20,7 @@ python -m pip install .
 
 ### Set up Data Version Control (DVC)
 
-This is an optional step, but is highly recommended.
+This is an optional step, but is highly recommended. Note that you only need to run through this process once.
 
 `dmd-era5` uses [DVC](https://dvc.org/) to manage data versioning. DVC allows to keep multiple versions of a dataset with the same file name, and to set up a remote storage location to share datasets between project collaborators. Most DVC steps are automated, but you will need to set up DVC for the first time. DVC will have been installed as a dependency when you installed this package. DVC works alongside Git to track changes to data files, so it is a good idea to work in a new branch off the main branch when using `dmd-era5` with DVC:
 
@@ -43,7 +43,7 @@ If you plan on collaborating with others, you may want to set up a remote storag
     make dvc-setup
     ```
 
-    Which will initialize DVC, set up the local remote, and set DVC auto-stage to `true`. If you don't want to set up the local remote, you can run:
+    Which will initialize DVC, set up the local remote, and set DVC auto-stage to `true`. If you don't want to set up the local remote, instead you can run:
 
     ```bash
     make dvc-init
