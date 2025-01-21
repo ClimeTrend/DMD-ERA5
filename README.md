@@ -108,6 +108,16 @@ U = U.sel(space=U.level == 100)  # select all lat and lon values at level 100
 U = U.sel(space=U.latitude == 0)  # select all lon values at latitude 0
 ```
 
+The coordinate `original_variable` indicates the indices along the `space` dimension that correspond to each of the variables on which the SVD was performed. Variables are treated as additional data points along the `space` dimension, and the `original_variable` coordinate allows to identify which variable each data point corresponds to. If the SVD was performed on a single variable, the `original_variable` coordinate will have a single unique value. If the SVD was performed on multiple variables, the `original_variable` coordinate will have multiple unique values, one for each variable. Similarly, the `delay` coordinate indicates the indices along the spatial dimension that correspond to each of the time delay embeddings applied to the data prior to the SVD. For example, if a time delay embedding of 2 was applied to the data, the `delay` coordinate will have two unique values, 0 and 1, where 0 corresponds to the snapshot at the current `time` value and 1 corresponds to the snapshot at the previous `time` value. The following code snippet shows an example:
+
+```python
+U = data.U  # get the left singular vectors
+U = U.sel(space=U.original_variable == 'temperature')  # select all lat, lon, and level values for the temperature variable
+U = U.sel(space=U.delay == 0)  # select all data points that correspond to the "current" snapshot
+```
+
+The attributes of the NetCDF file contain metadata about the SVD results, summarizing the parameters specified in `config.ini`. Note that if the `mean_center` and `scale` parameters are set to `True`, the SVD will be performed on the mean-centered and scaled data matrix, and two additional variables corresponding to the mean (`X_mean`) and standard deviation (`X_std`) of the data will be included in the NetCDF file. Similarly, if the parameter `save_data_matrix` is set to `True`, the preprocessed data matrix on which the SVD was performed will be included in the NetCDF file as the variable `X`. Note that `X` might be very large, in which case it will increase the size of the NetCDF file significantly.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for instructions on how to contribute.
