@@ -12,7 +12,7 @@ From source:
 
 ```bash
 git clone https://github.com/ClimeTrend/DMD-ERA5
-cd dmd-era5
+cd DMD-ERA5
 python -m pip install .
 ```
 
