@@ -90,11 +90,23 @@ python -m dmd_era5.era5_svd.era5_svd
 
 Modify the `era5-svd` section of the `config.ini` file to specify the desired SVD parameters. The SVD will be performed on the downloaded ERA5 data, which is assumed to be stored in the `data/era5_download` directory. The SVD results will be saved in the `data/era5_svd` directory as a NetCDF file, using the time range and time delta specified in `config.ini` as the file name (e.g. `2019-01-01T00_2019-01-02T00_1h.nc` for a time range from 2019-01-01 00:00 to 2019-01-02 00:00 with a time delta of 1 hour).
 
-PLACEHOLDER: describe contents of NetCDF file.
-
 If you followed the DVC setup instructions above, the SVD results will be automatically tracked by DVC, and you will see three new files appearing in your Git staging area, in a similar way to the downloaded data. You should commit these files to Git with a message like "First SVD of 2019-01-01T00_2019-01-02T00_1h.nc", and optionally push them to the remote storage location.
 
 `era5_svd` allows you to perform standard SVD from NumPy or randomized SVD from scikit-learn. The randomized SVD is faster and more memory-efficient than the standard SVD, and it's recommended for large datasets.
+
+#### Contents of the SVD NetCDF file
+
+An example of the contents of the SVD NetCDF file is as follows:
+
+![SVD NetCDF file](media/svd_netcdf_contents.png)
+
+The data variables `U`, `s`, and `V` correspond to the left singular vectors, singular values, and right singular vectors, respectively. Their dimensions are `(space, components)`, `(components,)`, and `(components, time)`, respectively. The components are organized in decreasing singular value order. The spatial dimension results from the flattening of the `latitude`, `longitude`, and `level` dimensions of the original ERA5 data. `space` is just a monotonically increasing index that represents the flattened spatial dimensions. `latitude`, `longitude`, and `level` are kept as coordinates in the NetCDF file, so that the spatial dimensions can be reconstructed from the `space` dimension. For example, to select all longitude values at a specific latitude and level, you can use the `space` dimension to select the corresponding indices:
+
+```python
+U = data.U  # get the left singular vectors
+U = U.sel(space=U.level == 100)  # select all lat and lon values at level 100
+U = U.sel(space=U.latitude == 0)  # select all lon values at latitude 0
+```
 
 ## Contributing
 
