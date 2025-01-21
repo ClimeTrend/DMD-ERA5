@@ -13,6 +13,8 @@ From source:
 ```bash
 git clone https://github.com/ClimeTrend/DMD-ERA5
 cd DMD-ERA5
+python -m venv .venv
+source .venv/bin/activate
 python -m pip install .
 ```
 
