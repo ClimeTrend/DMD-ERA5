@@ -78,7 +78,9 @@ def download_era5_data(parsed_config: dict, use_mock_data: bool = False) -> xr.D
         else:
             # Open the ERA5 Dataset
             log_and_print(logger, "Loading ERA5 Dataset...")
-            full_era5_ds = xr.open_dataset(parsed_config["source_path"], engine="zarr")
+            full_era5_ds = xr.open_zarr(
+                parsed_config["source_path"], chunks={"time": 100}
+            )
             log_and_print(logger, "ERA5 loaded.")
 
             # Select the variables

@@ -34,6 +34,7 @@ dependencies = ["xarray",
     "pyprojroot",
     "dvc",
     "GitPython",
+    "dask",
     ]
 
 [project.optional-dependencies]
