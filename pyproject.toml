@@ -7,6 +7,9 @@ name = "dmd-era5"
 version = "0.1.0"
 authors = [
   { name = "Lydia France", email = "lfrance@turing.ac.uk" },
+  { name = "David Salvador-Jasin", email = "dsalvadorjasin@turing.ac.uk" },
+  { name = "Louisa van Zeeland" },
+  { name = "Oliver Strickson" },
 ]
 description = "Running DMD on ERA5 data"
 readme = "README.md"
