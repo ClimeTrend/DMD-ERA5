@@ -2,7 +2,9 @@ import logging
 import sys
 from datetime import datetime, timedelta
 
+import numpy as np
 import xarray as xr
+from numpy.lib.stride_tricks import sliding_window_view
 
 from dmd_era5.core import log_and_print, setup_logger
 
@@ -140,21 +142,24 @@ def resample_era5_dataset(ds: xr.Dataset, delta_time: timedelta) -> xr.Dataset:
 
 
 def standardize_data(
-    data: xr.DataArray,
+    data: xr.Dataset,
     dim: str = "time",
     scale: bool = True,
-) -> xr.DataArray:
+) -> tuple[xr.Dataset, xr.Dataset, xr.Dataset | None]:
     """
-    Standardize the input DataArray by applying mean centering and (optionally)
+    Standardize the input Dataset by applying mean centering and (optionally)
     scaling to unit variance along the specified dimension.
 
     Args:
-        data (xr.DataArray): The input data to standardize.
+        data (xr.Dataset): The input data to standardize.
         dim (str): The dimension along which to standardize. Default is "time".
         scale (bool): Whether to scale the data. Default is True.
 
     Returns:
-        xr.DataArray: The standardized data.
+        xr.Dataset: The standardized data.
+        xr.Dataset: The mean along the specified dimension
+        xr.Dataset: The standard deviation along the specified dimension,
+            if scale is True. Otherwise returns None.
     """
     log_and_print(logger, f"Standardizing data along {dim} dimension...")
 
@@ -163,9 +168,247 @@ def standardize_data(
         logger,
         f"Removing mean along {dim} dimension...",
     )
-    data = data - data.mean(dim=dim)
+    mean = data.mean(dim=dim)
+    data = data - mean
     if scale:
         # Scale the data by the standard deviation
         log_and_print(logger, f"Scaling to unit variance along {dim} dimension...")
-        data = data / data.std(dim=dim)
-    return data
+        std = data.std(dim=dim)
+        data = data / std
+        return data, mean, std
+    return data, mean, None
+
+
+def _apply_delay_embedding_np(X: np.ndarray, d: int) -> np.ndarray:
+    """
+    Apply delay embedding to temporal snapshots.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        The input data array of shape (n_samples, n_time).
+    d : int
+        The number of snapshots from X to include in each snapshot of the output.
+
+    Returns
+    -------
+    np.ndarray
+        The delay-embedded data array of shape (n_samples * d, n_time - d + 1).
+    """
+
+    if X.ndim != 2:
+        msg = "Input array must be 2D."
+        raise ValueError(msg)
+
+    if not isinstance(d, int) or d <= 0:
+        msg = "Delay must be an integer greater than 0."
+        raise ValueError(msg)
+
+    return (
+        sliding_window_view(X.T, (d, X.shape[0]))[:, 0]
+        .reshape(X.shape[1] - d + 1, -1)
+        .T
+    )
+
+
+def apply_delay_embedding(X: xr.DataArray, d: int) -> xr.DataArray:
+    """
+    Apply delay embedding to temporal snapshots.
+
+    Parameters
+    ----------
+    X : xr.DataArray
+        The input data array of shape (n_space * n_variables, n_time).
+        The dimensions must be ("space", "time") and the coordinates
+        must include "space", "time" and "original_variable".
+    d : int
+        The number of snapshots from X to include in each snapshot of the output.
+
+    Returns
+    -------
+    xr.DataArray
+        The delay-embedded data array of shape
+        (n_space * n_variables * d, n_time - d + 1), with dimensions
+        ("space", "time") and coordinates "space", "time", "original_variable"
+        and "delay". "delay" is the delay index for each space coordinate, e.g.
+        for d=2, the delay indices are [1, 1, ..., 0, 0, ...], where a value of
+        1 indicates one snapshot delay relative to the time coordinate, and 0
+        indicates no delay.
+    """
+
+    if not isinstance(X, xr.DataArray):
+        msg = "Input data must be a xr.DataArray"
+        raise ValueError(msg)
+
+    dims: list[str] = list(map(str, X.dims))
+    coords: list[str] = list(map(str, X.coords.keys()))
+
+    if sorted(dims) != sorted(["space", "time"]):
+        msg = "Input data must have dimensions ('space', 'time')."
+        raise ValueError(msg)
+
+    if sorted(coords) != sorted(["original_variable", "space", "time"]):
+        msg = "Input data must have coordinates ('space', 'time', 'original_variable')."
+        raise ValueError(msg)
+
+    result = _apply_delay_embedding_np(X.values, d)
+    dataarray = xr.DataArray(
+        result,
+        dims=("space", "time"),
+        coords={
+            "space": np.tile(X.coords["space"], d),
+            "time": X.coords["time"][d - 1 :],
+            "original_variable": (
+                "space",
+                np.tile(X.coords["original_variable"], d),
+            ),
+            "delay": (
+                "space",
+                np.repeat(np.flip(np.arange(d)), X.coords["space"].shape[0]),
+            ),
+        },
+        attrs=X.attrs,
+    )
+    dataarray.attrs["delay_embedding"] = d
+
+    return dataarray
+
+
+def flatten_era5_variables(era5_ds: xr.Dataset) -> xr.DataArray:
+    """
+    Flatten the variables in an ERA5 dataset to a single 2D array
+    (if time coordinate is present) or a 1D array (if time coordinate is absent),
+    returned as a DataArray with dimensions (space, time) or (space).
+    If there is more than one variable in the dataset, they are stacked
+    along the space dimension. In other words, the output array has shape
+    (n_space * n_variables, n_time) or (n_space * n_variables), where the
+    first n_space elements correspond to the first variable, the next n_space elements
+    correspond to the second variable, and so on.
+
+    Parameters
+    ----------
+    era5_ds : xr.Dataset
+        The input ERA5 dataset. It must have coordinates
+        ('latitude', 'longitude', 'level', 'time'), if it is a time series,
+        or ('latitude', 'longitude', 'level'), if it is a mean or standard
+        deviation field. It must have at least one variable.
+
+    Returns
+    -------
+    xr.DataArray
+        The flattened array of variables, with shape (n_space * n_variables, n_time) or
+        (n_space * n_variables), where n_space = n_level * n_lat * n_lon.
+        The DataArray has dimensions (space, time) or (space), and coordinates "space",
+        "time" (if present), and "original_variable". "space" is a tuple of
+        (level, latitude, longitude), and "original_variable" is the original
+        variable name.
+    """
+
+    variables: list[str] = list(map(str, era5_ds.data_vars.keys()))
+    coords: list[str] = list(map(str, era5_ds.coords.keys()))
+    must_have_space_coords = ["latitude", "longitude", "level"]
+    must_have_space_time_coords = [*must_have_space_coords, "time"]
+    spatial_stack_order = ["level", "latitude", "longitude"]
+
+    if sorted(coords) != sorted(must_have_space_time_coords) and sorted(
+        coords
+    ) != sorted(must_have_space_coords):
+        msg = """
+        Input dataset must have coordinates ('latitude', 'longitude', 'level')
+        or ('latitude', 'longitude', 'level', 'time').
+        """
+        raise ValueError(msg)
+
+    # stack the spatial dimensions
+    stacked = era5_ds.stack(space=spatial_stack_order)
+
+    if "time" in coords:
+        # create a list of variable arrays with shape (n_space, n_time)
+        data_list = [
+            stacked[var].transpose("space", "time").values for var in variables
+        ]
+    else:
+        # create a list of variable arrays with shape (n_space,)
+        data_list = [stacked[var].values for var in variables]
+    # concatenate the variable arrays along the space dimension,
+    # resulting in an array of shape (n_space * n_variables, n_time)
+    # or (n_space * n_variables,)
+    data_combined = np.concatenate(data_list, axis=0)
+
+    variable_labels = np.repeat(variables, stacked.coords["space"].shape[0])
+
+    # create a DataArray for the combined data
+    if "time" in coords:
+        dataarray = xr.DataArray(
+            data_combined,
+            dims=("space", "time"),
+            coords={
+                "space": np.tile(stacked.coords["space"], len(variables)),
+                "time": stacked.coords["time"],
+                "original_variable": ("space", variable_labels),
+            },
+            attrs=era5_ds.attrs,
+        )
+    else:
+        dataarray = xr.DataArray(
+            data_combined,
+            dims=("space",),
+            coords={
+                "space": np.tile(stacked.coords["space"], len(variables)),
+                "original_variable": ("space", variable_labels),
+            },
+            attrs=era5_ds.attrs,
+        )
+    dataarray.attrs["original_variables"] = variables
+    dataarray.attrs["space_coords"] = spatial_stack_order
+
+    return dataarray
+
+
+def space_coord_to_level_lat_lon(
+    ds: xr.Dataset,
+) -> xr.Dataset:
+    """
+    Convert the "space" coordinate, consisting of tuples of level,
+    latitude, and longitude, to separate coordinates for "level",
+    "latitude", and "longitude". This is done before saving to NetCDF,
+    as NetCDF does not support coordinate variables as arrays of
+    tuples or sequences.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        The input dataset with a "space" coordinate.
+
+    Returns
+    -------
+    xr.Dataset
+        The dataset with separate coordinates for level, latitude, and longitude.
+        The space coordinate is converted to a 1D array of increasing integers.
+    """
+
+    if "space" not in ds.coords:
+        msg = "Input dataset must have a 'space' coordinate."
+        raise ValueError(msg)
+
+    if "level" in ds.coords and "latitude" in ds.coords and "longitude" in ds.coords:
+        msg = """
+        Dataset already has separate coordinates for
+        level, latitude, and longitude.
+        """
+        log_and_print(logger, msg)
+        return ds
+
+    space_data = ds.coords["space"].values
+    level_data = np.array([space[0] for space in space_data])
+    lat_data = np.array([space[1] for space in space_data])
+    lon_data = np.array([space[2] for space in space_data])
+
+    space_data = np.array(range(len(space_data)), dtype=int)
+    ds.coords["space"] = space_data
+
+    return ds.assign_coords(
+        level=("space", level_data),
+        latitude=("space", lat_data),
+        longitude=("space", lon_data),
+    )

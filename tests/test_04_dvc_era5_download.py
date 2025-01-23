@@ -25,51 +25,6 @@ from dmd_era5.era5_download import (
     main as era5_download_main,
 )
 
-
-@pytest.fixture
-def base_config():
-    return {
-        "source_path": "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
-        "start_datetime": "2019-01-01T00",
-        "end_datetime": "2019-01-01T04",
-        "delta_time": "1h",
-        "variables": "all",
-        "levels": "1000",
-    }
-
-
-@pytest.fixture
-def era5_data_config_a(base_config):
-    config = base_config.copy()
-    config["variables"] = "temperature"
-    config["levels"] = "1000"
-    return config
-
-
-@pytest.fixture
-def era5_data_config_b(base_config):
-    config = base_config.copy()
-    config["variables"] = "u_component_of_wind"
-    config["levels"] = "850"
-    return config
-
-
-@pytest.fixture
-def era5_data_config_c(base_config):
-    config = base_config.copy()
-    config["variables"] = "temperature,v_component_of_wind"
-    config["levels"] = "1000,925"
-    return config
-
-
-@pytest.fixture
-def era5_data_config_d(base_config):
-    config = base_config.copy()
-    config["variables"] = "temperature"
-    config["levels"] = "500"
-    return config
-
-
 dvc_file_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.dvc"
 dvc_log_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc.yaml"
 data_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc"
@@ -78,7 +33,8 @@ data_path = "data/era5_download/2019-01-01T00_2019-01-01T04_1h.nc"
 @pytest.mark.dependency(name="test_add_era5_to_dvc")
 @pytest.mark.docker
 @pytest.mark.parametrize(
-    "config", ["era5_data_config_a", "era5_data_config_b", "era5_data_config_c"]
+    "config",
+    ["era5_download_config_a", "era5_download_config_b", "era5_download_config_c"],
 )
 def test_add_era5_to_dvc(config, request):
     """
@@ -216,7 +172,8 @@ def test_dvc_data_versions():
 )
 @pytest.mark.docker
 @pytest.mark.parametrize(
-    "config", ["era5_data_config_a", "era5_data_config_b", "era5_data_config_c"]
+    "config",
+    ["era5_download_config_a", "era5_download_config_b", "era5_download_config_c"],
 )
 def test_dvc_retrieve_era5_data(config, request):
     """
@@ -253,7 +210,8 @@ def test_dvc_retrieve_era5_data(config, request):
 )
 @pytest.mark.docker
 @pytest.mark.parametrize(
-    "config", ["era5_data_config_a", "era5_data_config_b", "era5_data_config_d"]
+    "config",
+    ["era5_download_config_a", "era5_download_config_b", "era5_download_config_d"],
 )
 def test_main_era5_download(config, request):
     """
@@ -271,7 +229,7 @@ def test_main_era5_download(config, request):
     dvc_file_path = parsed_config["save_path"] + ".dvc"
     dvc_log_path = parsed_config["save_path"] + ".yaml"
 
-    if config != "era5_data_config_d":
+    if config != "era5_download_config_d":
         added_to_dvc, retrieved_from_dvc = era5_download_main(
             config_dict, use_mock_data=True, use_dvc=True
         )
@@ -285,14 +243,14 @@ def test_main_era5_download(config, request):
         levels = data.level.values.tolist()
         data.close()
 
-        if config == "era5_data_config_a":
+        if config == "era5_download_config_a":
             assert (
                 data_vars[0] == "temperature"
             ), "The data should contain temperature data"
             assert (
                 levels[0] == 1000
             ), "The data should contain data at pressure level 1000"
-        elif config == "era5_data_config_b":
+        elif config == "era5_download_config_b":
             assert (
                 data_vars[0] == "u_component_of_wind"
             ), "The data should contain u-wind data"
@@ -343,7 +301,7 @@ def test_main_era5_download(config, request):
     depends=["test_add_era5_to_dvc", "test_main_era5_download"],
 )
 @pytest.mark.docker
-def test_dvc_retrieval_from_remote(era5_data_config_b):
+def test_dvc_retrieval_from_remote(era5_download_config_b):
     """
     Test that data can be retrieved from the remote DVC repository.
 
@@ -358,7 +316,7 @@ def test_dvc_retrieval_from_remote(era5_data_config_b):
     assert not os.path.exists(".dvc/cache"), "The DVC cache should have been deleted"
 
     added_to_dvc, retrieved_from_dvc = era5_download_main(
-        era5_data_config_b, use_mock_data=True, use_dvc=True
+        era5_download_config_b, use_mock_data=True, use_dvc=True
     )
     assert not added_to_dvc, "The data should not have been added to DVC"
     assert retrieved_from_dvc, "The data should have been retrieved from DVC"

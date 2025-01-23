@@ -126,15 +126,43 @@ def retrieve_data_from_dvc(
     If the dvc file or log file does not exist, raises FileNotFoundError.
     If a matching version of the data does not exist in the log, raises ValueError.
     If a matching version of the data exists in the log but cannot be retrieved
-    from DVC,raises ValueError.
+    from DVC, raises ValueError.
 
     Args:
         parsed_config (dict): The parsed configuration.
-        data_type (str): The type of data to retrieve.
-            Currently only "era5_slice" is supported.
+        data_type (str): The type of data to retrieve
+            For example, a slice of ERA5, or SVD results.
+            Currently only "era5_slice" and "era5_svd" are supported.
     """
-    log_file_path = parsed_config["save_path"] + ".yaml"
-    dvc_file_path = parsed_config["save_path"] + ".dvc"
+
+    if data_type == "era5_slice":
+        try:
+            log_file_path = parsed_config["era5_slice_path"] + ".yaml"
+            dvc_file_path = parsed_config["era5_slice_path"] + ".dvc"
+        except KeyError as e:
+            msg = """
+            The configuration dictionary does not contain the path to the ERA5 slice.
+            Are you sure you are using the correct configuration or requesting
+            the correct data type?
+            """
+            raise KeyError(msg) from e
+    elif data_type == "era5_svd":
+        try:
+            log_file_path = parsed_config["era5_svd_path"] + ".yaml"
+            dvc_file_path = parsed_config["era5_svd_path"] + ".dvc"
+        except KeyError as e:
+            msg = """
+            The configuration dictionary does not contain the path to the ERA5 SVD data.
+            Are you sure you are using the correct configuration or requesting
+            the correct data type?
+            """
+            raise KeyError(msg) from e
+    else:
+        msg = """
+        Data type not supported.
+        Currently only 'era5_slice' and 'era5_svd' are supported.
+        """
+        raise ValueError(msg)
 
     if not os.path.exists(log_file_path) or not os.path.exists(dvc_file_path):
         msg = "DVC file or log file does not exist."
@@ -147,7 +175,7 @@ def retrieve_data_from_dvc(
     # variables, levels, and source path in the configuration, by looping
     # through the log file content.
     md5_hash_keep = None  # The md5 hash of the version to keep
-    date_downloaded_keep = datetime(1970, 1, 1)
+    date_keep = datetime(1970, 1, 1)
 
     if data_type == "era5_slice":
         for md5_hash, metadata in log_file_content.items():
@@ -159,12 +187,24 @@ def retrieve_data_from_dvc(
                 and parsed_config["source_path"] == metadata["source_path"]
             ):
                 date_downloaded = metadata["date_downloaded"]
-                if date_downloaded > date_downloaded_keep:
+                if date_downloaded > date_keep:
                     md5_hash_keep = md5_hash
-                    date_downloaded_keep = date_downloaded
-    else:
-        msg = "Data type not supported."
-        raise ValueError(msg)
+                    date_keep = date_downloaded
+    elif data_type == "era5_svd":
+        for md5_hash, metadata in log_file_content.items():
+            if (
+                parsed_config["source_path"] == metadata["source_path"]
+                and parsed_config["variables"] == metadata["variables"]
+                and parsed_config["levels"] == metadata["levels"]
+                and parsed_config["delay_embedding"] == metadata["delay_embedding"]
+                and parsed_config["mean_center"] == bool(metadata["mean_center"])
+                and parsed_config["scale"] == bool(metadata["scale"])
+                and parsed_config["n_components"] == metadata["n_components"]
+            ):
+                date_processed = metadata["date_processed"]
+                if date_processed > date_keep:
+                    md5_hash_keep = md5_hash
+                    date_keep = date_processed
 
     if md5_hash_keep:
         commit_hash = find_first_commit_with_md5_hash(md5_hash_keep, dvc_file_path)
@@ -177,12 +217,22 @@ def retrieve_data_from_dvc(
         with GitRepo(here()) as repo:
             repo.git.checkout(commit_hash, dvc_file_path)
         with DvcRepo(here()) as repo:
-            if os.path.exists(os.path.join(here(), ".dvc/cache")):
+            md5_hash_start = md5_hash_keep[:2]
+            md5_hash_end = md5_hash_keep[2:]
+            # Check if the file version is in the local DVC cache
+            if os.path.exists(
+                os.path.join(
+                    here(), ".dvc/cache/files/md5", md5_hash_start, md5_hash_end
+                )
+            ):
                 checked_out_files = repo.checkout(targets=[dvc_file_path])
                 print("Checked out files:", checked_out_files)
             else:
                 print(
-                    "No DVC cache found. Attempting to fetch data from default remote."
+                    """
+                    Data not found in local DVC cache.
+                    Attempting to fetch from default remote.
+                    """
                 )
                 remote_exists, data_fetched = fetch_data_from_default_remote(
                     repo, targets=[dvc_file_path]

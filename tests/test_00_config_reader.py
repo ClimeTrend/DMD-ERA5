@@ -80,8 +80,8 @@ def test_config_reader_sections(test_config_reader):
 
     config_section_1 = test_config_reader("test-section-1")
     assert (
-        len(config_section_1) == 4
-    ), "Expected 4 parameters in test-section-1 from test config file."
+        len(config_section_1) == 5
+    ), "Expected 5 parameters in test-section-1 from test config file."
     assert (
         config_section_1["param_0"] == "value_0"
     ), "Expected param_0 to be 'value_0' in test-section-1 from test config file."
@@ -92,8 +92,11 @@ def test_config_reader_sections(test_config_reader):
         config_section_1["param_2"] == "value_2"
     ), "Expected param_2 to be 'value_2' in test-section-1 from test config file."
     assert (
-        config_section_1["param_3"] == "value_3"
-    ), "Expected param_3 to be 'value_3' in test-section-1 from test config file."
+        config_section_1["param_3"] is True
+    ), "Expected param_3 to be True in test-section-1 from test config file."
+    assert (
+        config_section_1["param_4"] == 2
+    ), "Expected param_4 to be 2 in test-section-1 from test config file."
 
 
 def test_config_nonexistent_section(test_config_reader):
@@ -118,9 +121,45 @@ def test_actual_config_era5_download_section(actual_config_reader):
     assert "levels" in config, "era5-download section should have levels"
 
 
-def test_actual_config_type(actual_config_reader):
-    """Test type conversion of configuration values in the actual configuration."""
+def test_actual_config_era5_svd_section(actual_config_reader):
+    """Test the contents of era5-svd section in the actual configuration."""
+    config = actual_config_reader("era5-svd")
+    assert "source_path" in config, "era5-svd section should have a source_path"
+    assert "start_datetime" in config, "era5-svd section should have a start_datetime"
+    assert "end_datetime" in config, "era5-svd section should have an end_datetime"
+    assert "delta_time" in config, "era5-svd section should have a delta_time"
+    assert "variables" in config, "era5-svd section should have variables"
+    assert "levels" in config, "era5-svd section should have levels"
+    assert "mean_center" in config, "era5-svd section should have mean-center"
+    assert "scale" in config, "era5-svd section should have scale"
+    assert "svd_type" in config, "era5-svd section should have svd_type"
+    assert "delay_embedding" in config, "era5-svd section should have delay_embedding"
+    assert "n_components" in config, "era5-svd section should have n_components"
+    assert "save_data_matrix" in config, "era5-svd section should have save_data_matrix"
+
+
+def test_actual_config_era5_download_type(actual_config_reader):
+    """
+    Test type conversion of era5-download config values in the actual configuration.
+    """
     config = actual_config_reader("era5-download")
 
     for key, value in config.items():
         assert isinstance(value, str), f"Expected {key} to be a string."
+
+
+def test_actual_config_era5_svd_type(actual_config_reader):
+    """
+    Test type conversion of era5-svd config values in the actual configuration.
+    """
+    config = actual_config_reader("era5-svd")
+
+    for key, value in config.items():
+        if key == "mean_center" or key == "scale" or key == "save_data_matrix":
+            assert isinstance(value, bool), f"Expected {key} to be a bool."
+        elif key == "svd_type":
+            assert isinstance(value, str), f"Expected {key} to be a string."
+        elif key == "delay_embedding" or key == "n_components":
+            assert isinstance(value, int), f"Expected {key} to be an int."
+        else:
+            assert isinstance(value, str), f"Expected {key} to be a string."
