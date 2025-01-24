@@ -8,11 +8,11 @@ from pyprojroot import here
 
 from dmd_era5 import (
     add_data_to_dvc,
+    config_parser,
     create_mock_era5,
     create_mock_era5_svd,
     space_coord_to_level_lat_lon,
 )
-from dmd_era5.core import config_parser
 from dmd_era5.era5_download import (
     add_config_attributes as add_config_attributes_era5_download,
 )

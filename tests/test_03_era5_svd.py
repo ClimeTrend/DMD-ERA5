@@ -9,14 +9,15 @@ import pytest
 import xarray as xr
 from pyprojroot import here
 
-from dmd_era5 import config_parser
-from dmd_era5.create_mock_data import create_mock_era5, create_mock_era5_svd
-from dmd_era5.era5_svd import combine_svd_results, retrieve_era5_slice, svd_on_era5
-from dmd_era5.slice_tools import (
+from dmd_era5 import (
     apply_delay_embedding,
+    config_parser,
+    create_mock_era5,
+    create_mock_era5_svd,
     flatten_era5_variables,
     standardize_data,
 )
+from dmd_era5.era5_svd import combine_svd_results, retrieve_era5_slice, svd_on_era5
 
 
 @pytest.fixture

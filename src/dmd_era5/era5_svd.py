@@ -12,18 +12,14 @@ from sklearn.utils.extmath import randomized_svd  # type: ignore[import-untyped]
 
 from dmd_era5 import (
     add_data_to_dvc,
-    retrieve_data_from_dvc,
-)
-from dmd_era5.core import (
+    apply_delay_embedding,
     config_parser,
     config_reader,
-    log_and_print,
-    setup_logger,
-)
-from dmd_era5.slice_tools import (
-    apply_delay_embedding,
     flatten_era5_variables,
+    log_and_print,
     resample_era5_dataset,
+    retrieve_data_from_dvc,
+    setup_logger,
     slice_era5_dataset,
     space_coord_to_level_lat_lon,
     standardize_data,

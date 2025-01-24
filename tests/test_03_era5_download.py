@@ -9,9 +9,8 @@ import pytest
 import xarray as xr
 from pyprojroot import here
 
-from dmd_era5 import config_parser
+from dmd_era5 import config_parser, download_era5_data
 from dmd_era5.constants import ERA5_PRESSURE_LEVEL_VARIABLES, ERA5_PRESSURE_LEVELS
-from dmd_era5.era5_download import download_era5_data
 
 
 @pytest.fixture

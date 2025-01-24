@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 from numpy.lib.stride_tricks import sliding_window_view
 
-from dmd_era5.core import log_and_print, setup_logger
+from dmd_era5.logger import log_and_print, setup_logger
 
 # Set up logger
 logger = setup_logger("ERA5Processing", "era5_processing.log")
