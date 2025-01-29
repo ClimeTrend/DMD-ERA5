@@ -1,18 +1,18 @@
-# dmd-era5
+# DynaModERA (DMD-ERA5)
 
 [![Actions Status][actions-badge]][actions-link]
 [![PyPI version][pypi-version]][pypi-link]
 [![PyPI platforms][pypi-platforms]][pypi-link]
 
-Running DMD on ERA5 data
+Running Dynamic Mode Decomposition (DMD) on the [ERA5 dataset](https://www.ecmwf.int/en/forecasts/dataset/ecmwf-reanalysis-v5).
 
 ## Installation
 
 From source:
 
 ```bash
-git clone https://github.com/ClimeTrend/DMD-ERA5
-cd DMD-ERA5
+git clone https://github.com/ClimeTrend/DynaModERA.git
+cd DynaModERA
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install .
